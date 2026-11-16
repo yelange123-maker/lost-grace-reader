@@ -1,0 +1,11 @@
+{
+  "display_name": "Little Fish Reader (Test)",
+  "loading_order": 50,
+  "requires": [],
+  "optional": [],
+  "js": "index.js",
+  "css": "style.css",
+  "author": "Little Fish Reader",
+  "version": "0.1.0",
+  "homePage": "https://github.com/yelange123-maker/lost-grace-reader"
+}
