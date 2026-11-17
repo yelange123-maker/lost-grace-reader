@@ -30,3 +30,5 @@ v0.3.25 timing test: 500ms linear page turn; midpoint 250ms; fallback completion
 v0.3.30: Penguin recovery from original SillyTavern chat markers when regex-rendered DOM no longer carries dm-* classes; keep v0.3.29 toggle and v0.3.28 flip behavior.
 
 v0.3.32: Remove empty paragraph/inline wrappers left by hidden penguin components before pagination, so they do not reserve blank height.
+
+v0.3.34: Balance penguin paragraph incoming/outgoing spacing at 10px; retain bubble and all flip behavior.
