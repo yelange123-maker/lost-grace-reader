@@ -171,3 +171,29 @@
 #lfr-root .lfr-flip-number {font-size:11px;line-height:1;bottom:12px}
 /* Shorter motion reduces the time that temporary and destination pages overlap. */
 #lfr-root .lfr-flip-sheet {transition-duration:460ms}
+
+/* v0.3.16: larger vertical fade on temporary sheets only.
+   Do not alter the geometry, text padding, or left/right fade. */
+#lfr-root .lfr-flip-stationary::before,
+#lfr-root .lfr-flip-face::before {
+  -webkit-mask-image:
+    linear-gradient(to right,transparent 0,#000 10px,#000 calc(100% - 10px),transparent 100%),
+    linear-gradient(to bottom,transparent 0,#000 54px,#000 calc(100% - 48px),transparent 100%);
+  mask-image:
+    linear-gradient(to right,transparent 0,#000 10px,#000 calc(100% - 10px),transparent 100%),
+    linear-gradient(to bottom,transparent 0,#000 54px,#000 calc(100% - 48px),transparent 100%);
+}
+#lfr-root .lfr-flip-face::after {
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 54px,#000 calc(100% - 48px),transparent 100%);
+  mask-image:linear-gradient(to bottom,transparent 0,#000 54px,#000 calc(100% - 48px),transparent 100%);
+}
+/* The transformed page number looks larger than its stationary counterpart.
+   Use a smaller fixed size without touching the original page numbers. */
+#lfr-root .lfr-flip-number {
+  font:10px/1 Georgia,serif;
+  bottom:12px;
+}
+#lfr-root .lfr-flip-sheet {transition-duration:640ms}
+
+/* v0.3.17: requested smaller animated folio; normal folios unchanged. */
+#lfr-root .lfr-flip-number{font-size:6px;line-height:1}
