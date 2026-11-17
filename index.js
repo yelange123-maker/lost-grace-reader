@@ -88,6 +88,67 @@
   ]);
   const richTags = new Set(['P','DIV','SPAN','EM','I','STRONG','B','U','S','DEL','BLOCKQUOTE','BR','H1','H2','H3','H4','H5','H6','UL','OL','LI','CODE','PRE','SMALL','SUP','SUB','MARK']);
   const richBlocks = new Set(['P','DIV','BLOCKQUOTE','H1','H2','H3','H4','H5','H6','UL','OL','LI','PRE']);
+  // Reconstruct a trusted Slate component from the ORIGINAL message when
+  // the rendered message has lost its structural classes. Never execute its HTML.
+  function originalMessage(mes) {
+    try {
+      const id = Number(mes.getAttribute('mesid') ?? mes.dataset.mesid);
+      const context = window.SillyTavern?.getContext?.();
+      const entry = Number.isInteger(id) && id >= 0 ? context?.chat?.[id] : null;
+      return typeof entry?.mes === 'string' ? entry.mes : '';
+    } catch (_) { return ''; }
+  }
+  function parseSlate(raw) {
+    const match = raw.match(/<Slate>\s*\[Scene\|([^|\]\r\n]*)\|([^\]]*)\]\s*\[Location\|([^\]]*)\]\s*\[TimeWeather\|([^|\]]*)\|([^\]]*)\](?:\s*\[Start_Atmosphere\|([\s\S]*?)\])?\s*<\/Slate>/i);
+    if (!match) return null;
+    return { number:match[1].trim(), title:match[2].trim(), location:match[3].trim(), time:match[4].trim(), weather:match[5].trim(), atmosphere:(match[6]||'').trim() };
+  }
+  function buildSlate(data) {
+    const root=document.createElement('div');root.className='elegant-slate-container';
+    const field=(parent,cls,value)=>{const el=document.createElement('div');el.className=cls;el.textContent=value;parent.append(el);};
+    field(root,'slate-scene-no','SCENE '+data.number);
+    field(root,'slate-title',data.title);
+    const meta=document.createElement('div');meta.className='slate-meta-block';
+    field(meta,'slate-location',data.location);
+    field(meta,'slate-time-weather',data.time+' ｜ '+data.weather);
+    root.append(meta);
+    if(data.atmosphere)field(root,'slate-atmosphere',data.atmosphere);
+    return root;
+  }
+  function restoreSlate(snapshot,mes) {
+    const data=parseSlate(originalMessage(mes));
+    if (!data) { console.info('[Little Fish Reader] Slate: original message unavailable or unmatched');return; }
+    // Detect an existing Slate's rendered text before changing anything.
+    // The source may be styled by a preset yet lack its wrapper/class in our snapshot.
+    const positions=textPositions(snapshot),flat=positions.nodes.map(n=>n.node.nodeValue).join('');
+    const scenePattern=new RegExp('SCENE\\s*'+data.number.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','i');
+    const scene=scenePattern.exec(flat);
+    const firstAtmosphere=data.atmosphere.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+    const endMarker=firstAtmosphere.length?firstAtmosphere[firstAtmosphere.length-1]:data.weather;
+    const normalize=x=>x.replace(/\s+/g,'').replace(/[，,。．]/g,'');
+    if(!scene || scene.index>1500 || !endMarker) {console.info('[Little Fish Reader] Slate: rendered header not located');return;}
+    // Find the last atmosphere line allowing arbitrary spaces/newlines between characters.
+    const tail=flat.slice(scene.index,scene.index+6000);
+    const normalizedTail=normalize(tail),normalizedEnd=normalize(endMarker);
+    const normalizedStart=normalize(tail.slice(0,scene[0].length));
+    const normalizedIndex=normalizedTail.indexOf(normalizedEnd,normalizedStart.length);
+    if(normalizedIndex<0) {console.info('[Little Fish Reader] Slate: atmosphere boundary not found');return;}
+    let seen=0,stop=0;
+    for(let i=0;i<tail.length;i++) {
+      if(normalize(tail[i]).length)seen+=normalize(tail[i]).length;
+      if(seen>=normalizedIndex+normalizedEnd.length){stop=i+1;break;}
+    }
+    if(!stop)return;
+    const at=(offset)=>{for(const n of positions.nodes)if(offset<n.end)return [n.node,offset-n.start];const n=positions.nodes.at(-1);return [n.node,n.node.nodeValue.length];};
+    const [a,ao]=at(scene.index),[b,bo]=at(scene.index+stop);
+    const range=document.createRange();range.setStart(a,ao);range.setEnd(b,bo);
+    range.deleteContents();range.insertNode(buildSlate(data));
+    // Remove now-empty ancestor blocks left by replacement, without touching prose.
+    for(const el of [...snapshot.querySelectorAll('div,p,span')].reverse()){
+      if(el!==snapshot && !el.textContent.trim() && !el.querySelector('.elegant-slate-container,br,img'))el.remove();
+    }
+    console.info('[Little Fish Reader] Slate: reconstructed from original message');
+  }
   function richSnapshot(mes) {
     const source = sourceNode(mes);
     if (!source) return null;
@@ -121,6 +182,7 @@
     // Previously its class was lost because only source.childNodes were copied.
     if ([...source.classList].some(c => slateClasses.has(c))) copy(source,wrapper);
     else for (const child of source.childNodes) copy(child,wrapper);
+    restoreSlate(wrapper,mes);
     return wrapper;
   }
   function textPositions(root) {
