@@ -25,3 +25,6 @@ v0.3.23 visual test: temporary flip surfaces no longer paint a second translucen
 v0.3.24 visual test: remove only the stationary duplicate paper tint; rotating sheet retains its translucent background. Diagnostic controls retained.
 
 v0.3.25 timing test: 500ms linear page turn; midpoint 250ms; fallback completion 540ms. All v0.3.24 visual and diagnostic behavior retained.
+
+
+v0.3.30: Penguin recovery from original SillyTavern chat markers when regex-rendered DOM no longer carries dm-* classes; keep v0.3.29 toggle and v0.3.28 flip behavior.

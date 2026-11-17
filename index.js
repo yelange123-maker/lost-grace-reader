@@ -174,6 +174,64 @@
     }
     console.info('[Little Fish Reader] Slate: reconstructed from original message');
   }
+  // The penguin switch controls the entire component, not merely its skin.
+  // Reconcile rendered text against raw chat markers, just as Slate recovery
+  // reconciles rendered layout with the original structured message.
+  function restorePenguins(snapshot, mes) {
+    const raw = originalMessage(mes);
+    const tokens = raw ? [...raw.matchAll(/\[企鹅说\|(normal|playful|serious|sad|rebut|lewd)\|([^\]]+)\]/g)] : [];
+    if (!tokens.length) {
+      console.info('[Little Fish Reader] Penguin: no raw markers available; rendered dm-* components handled directly');
+      return;
+    }
+    let matched = 0;
+    // Walk backwards: modifying a later token cannot invalidate earlier text.
+    // Recompute text offsets after each edit because DOM ranges change.
+    for (const token of tokens.reverse()) {
+      const kind = token[1], spoken = token[2], marker = token[0];
+      const existing = [...snapshot.querySelectorAll('.lfr-penguin')]
+        .some(el => el.textContent.trim() === spoken.trim());
+      if (existing && state.showPenguin) { matched++; continue; }
+      const positions = textPositions(snapshot);
+      const flat = positions.nodes.map(n => n.node.nodeValue).join('');
+      // Some regex engines leave the original marker visible, others leave
+      // only the spoken words. Prefer the complete marker when present.
+      let start = flat.lastIndexOf(marker), end = start + marker.length;
+      if (start < 0) {
+        start = flat.lastIndexOf(spoken);
+        end = start + spoken.length;
+      }
+      if (start < 0) {
+        const compact = spoken.replace(/\s+/g, '');
+        if (!compact) continue;
+        const compactAt = flat.replace(/\s+/g, '').lastIndexOf(compact);
+        if (compactAt < 0) continue;
+        let seen = 0; start = -1; end = -1;
+        for (let i = 0; i < flat.length; i++) {
+          if (/\s/.test(flat[i])) continue;
+          if (seen === compactAt) start = i;
+          seen++;
+          if (seen === compactAt + compact.length) { end = i + 1; break; }
+        }
+      }
+      if (start < 0 || end < 0) continue;
+      const locate = offset => {
+        for (const n of positions.nodes) if (offset < n.end) return [n.node, offset - n.start];
+        const last = positions.nodes.at(-1);
+        return last ? [last.node, last.node.nodeValue.length] : null;
+      };
+      const first = locate(start), last = locate(end);
+      if (!first || !last) continue;
+      // Existing styled components are handled by richSnapshot.copy().
+      if (first[0].parentElement?.closest('.lfr-penguin') || last[0].parentElement?.closest('.lfr-penguin')) continue;
+      const range = document.createRange();
+      range.setStart(first[0], first[1]); range.setEnd(last[0], last[1]);
+      range.deleteContents();
+      if (state.showPenguin) range.insertNode(penguinBubble(kind, spoken));
+      matched++;
+    }
+    console.info('[Little Fish Reader] Penguin:', state.showPenguin ? 'shown' : 'hidden', matched, 'of', tokens.length);
+  }
   function richSnapshot(mes) {
     const source = sourceNode(mes);
     if (!source) return null;
@@ -187,12 +245,10 @@
       if (el.matches(excluded) || skipReaderComponent(el) || isInvisible(el) || state.excludedTags.some(t => el.tagName.toLowerCase() === t.toLowerCase())) return;
       const penguin=penguinKind(el);
       if (penguin) {
-        // Disabled = the same ordinary spoken text as v0.3.28; enabled = bubble.
-        // The original regex emits an avatar span and a text span.
+        // An entire recognized dm-* component is omitted when disabled.
         const words=el.querySelector(':scope > span:not(.dm-avatar)');
         const spoken=(words || el).textContent || '';
         if (state.showPenguin) parent.append(penguinBubble(penguin,spoken));
-        else parent.append(document.createTextNode(spoken));
         return;
       }
       const tag = richTags.has(el.tagName) ? el.tagName.toLowerCase() : 'span';
@@ -218,6 +274,7 @@
     if ([...source.classList].some(c => slateClasses.has(c))) copy(source,wrapper);
     else for (const child of source.childNodes) copy(child,wrapper);
     restoreSlate(wrapper,mes);
+    restorePenguins(wrapper,mes);
     return wrapper;
   }
   function textPositions(root) {
