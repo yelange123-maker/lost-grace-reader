@@ -153,3 +153,21 @@
 #lfr-root .lfr-flip-face::after{-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 20px,#000 calc(100% - 10px),transparent 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 20px,#000 calc(100% - 10px),transparent 100%)}
 #lfr-root .lfr-flip-number{position:absolute;bottom:12px;left:0;width:100%;text-align:center;font:13px Georgia,serif;color:var(--lfr-muted);pointer-events:none;z-index:2}
 #lfr-root .lfr-pages::after{z-index:12}
+
+/* v0.3.15: keep the flip geometry and text layout identical to v0.3.13.
+   Only inset the decorative backgrounds, never the rotating sheet itself. */
+#lfr-root .lfr-flip-stationary::before,
+#lfr-root .lfr-flip-face::before {
+  top:8px;
+  bottom:8px;
+  /* Avoid an opaque rectangular edge at the sheet's outside boundaries. */
+  -webkit-mask-image:linear-gradient(to right,transparent 0,#000 10px,#000 calc(100% - 10px),transparent 100%),linear-gradient(to bottom,transparent 0,#000 20px,#000 calc(100% - 10px),transparent 100%);
+  mask-image:linear-gradient(to right,transparent 0,#000 10px,#000 calc(100% - 10px),transparent 100%),linear-gradient(to bottom,transparent 0,#000 20px,#000 calc(100% - 10px),transparent 100%);
+  -webkit-mask-composite:source-in;
+  mask-composite:intersect;
+}
+#lfr-root .lfr-flip-face::after {top:8px;bottom:8px}
+/* Match the real page number without changing any page geometry. */
+#lfr-root .lfr-flip-number {font-size:11px;line-height:1;bottom:12px}
+/* Shorter motion reduces the time that temporary and destination pages overlap. */
+#lfr-root .lfr-flip-sheet {transition-duration:460ms}
