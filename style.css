@@ -25,3 +25,44 @@
 #lfr-root .lfr-settings label{display:block;margin-bottom:12px}
 #lfr-root .lfr-settings textarea{display:block;width:100%;min-height:130px;resize:vertical;margin:8px 0 12px;background:#101114;color:var(--lfr-ink);border:1px solid var(--lfr-line);border-radius:8px;padding:10px;font:13px/1.5 monospace}
 #lfr-root .lfr-settings-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* v0.3.1: quiet, edge-blended reading surface. Only the backdrop fades; text stays crisp. */
+#lfr-root .lfr-book{
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  isolation:isolate;
+}
+#lfr-root .lfr-book::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  pointer-events:none;
+  background:#17191ce8;
+  -webkit-mask-image:linear-gradient(to right,transparent 0,#000 10px,#000 calc(100% - 10px),transparent 100%),linear-gradient(to bottom,transparent 0,#000 10px,#000 calc(100% - 10px),transparent 100%);
+  mask-image:linear-gradient(to right,transparent 0,#000 10px,#000 calc(100% - 10px),transparent 100%),linear-gradient(to bottom,transparent 0,#000 10px,#000 calc(100% - 10px),transparent 100%);
+  -webkit-mask-composite:source-in;
+  mask-composite:intersect;
+}
+#lfr-root .lfr-pages::after{
+  top:24px!important;
+  bottom:24px!important;
+  border:0!important;
+  width:1px;
+  background:linear-gradient(to bottom,transparent 0%,var(--lfr-line) 20px,var(--lfr-line) calc(100% - 20px),transparent 100%);
+}
+#lfr-root .lfr-page{
+  padding-top:clamp(38px,4.5vh,52px);
+}
+#lfr-root .lfr-tools{
+  top:8px;
+  left:10px;
+  right:10px;
+  padding:12px 15px;
+  border:0;
+  border-radius:10px;
+  background:#17191cf2;
+}
+#lfr-root .lfr-settings{top:76px}
+@media(max-width:700px){#lfr-root .lfr-page{padding-top:32px}}
