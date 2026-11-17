@@ -125,7 +125,10 @@
     const scene=scenePattern.exec(flat);
     const firstAtmosphere=data.atmosphere.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
     const endMarker=firstAtmosphere.length?firstAtmosphere[firstAtmosphere.length-1]:data.weather;
-    const normalize=x=>x.replace(/\s+/g,'').replace(/[，,。．]/g,'');
+    // Ignore layout whitespace, but NOT punctuation. The previous normalizer
+    // dropped the final '。' from the atmosphere boundary and left it behind
+    // as a standalone text node after inserting the reconstructed Slate.
+    const normalize=x=>x.replace(/\s+/g,'');
     if(!scene || scene.index>1500 || !endMarker) {console.info('[Little Fish Reader] Slate: rendered header not located');return;}
     // Find the last atmosphere line allowing arbitrary spaces/newlines between characters.
     const tail=flat.slice(scene.index,scene.index+6000);
