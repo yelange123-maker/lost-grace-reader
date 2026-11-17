@@ -280,22 +280,17 @@
   box-shadow:0 6px 20px rgba(0,0,0,.05),inset 0 1px 0 rgba(255,255,255,.5);
 }
 
-/* v0.3.34: Balance the spacing on BOTH sides of a penguin-only block.
-   The generic adjacent-paragraph rule above gives the incoming edge 1em;
-   v0.3.33 only tightened the outgoing edge, creating the uneven gap.
-   Set the incoming and outgoing block margins to the same measured value.
-   Keep the bubble itself intact and avoid changing ordinary paragraphs. */
-#lfr-root .lfr-page.lfr-rich-page :is(p,blockquote).lfr-penguin-block {
-  margin-top:10px;
-  margin-bottom:0;
-}
-#lfr-root .lfr-page.lfr-rich-page :is(p,blockquote):has(.lfr-penguin):not(.lfr-penguin-block) {
-  margin-top:10px;
+/* v0.3.35: The generic adjacent-block 1em margin caused a second incoming
+   gap above the penguin. Keep the component as one inline-flex unit, and
+   put breathing room after it rather than before it. */
+#lfr-root .lfr-page.lfr-rich-page :is(p,blockquote).lfr-penguin-block,
+#lfr-root .lfr-page.lfr-rich-page :is(p,blockquote):has(.lfr-penguin) {
+  margin-top:0;
   margin-bottom:0;
 }
 #lfr-root .lfr-page.lfr-rich-page :is(p,blockquote).lfr-penguin-block + :is(p,blockquote),
 #lfr-root .lfr-page.lfr-rich-page :is(p,blockquote):has(.lfr-penguin) + :is(p,blockquote) {
-  margin-top:10px;
+  margin-top:16px;
 }
 #lfr-root .lfr-page .lfr-penguin {
   margin:0;

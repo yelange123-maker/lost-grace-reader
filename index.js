@@ -106,7 +106,10 @@
     const avatar=document.createElement('span');avatar.className='lfr-penguin-avatar';
     avatar.style.backgroundImage='url("'+penguinFaces[kind]+'")';
     const bubble=document.createElement('span');bubble.className='lfr-penguin-bubble';
-    bubble.textContent=text;box.append(avatar,bubble);return box;
+    bubble.textContent=text;
+    // Zero-width boundary markers make the entire visual component visible to
+    // text-offset pagination, including its otherwise textless avatar.
+    box.append(document.createTextNode('\u200B'),avatar,bubble,document.createTextNode('\u200B'));return box;
   }
   const richTags = new Set(['P','DIV','SPAN','EM','I','STRONG','B','U','S','DEL','BLOCKQUOTE','BR','H1','H2','H3','H4','H5','H6','UL','OL','LI','CODE','PRE','SMALL','SUP','SUB','MARK']);
   const richBlocks = new Set(['P','DIV','BLOCKQUOTE','H1','H2','H3','H4','H5','H6','UL','OL','LI','PRE']);
@@ -380,6 +383,12 @@
       // Oversized bubbles retain normal character-level pagination as fallback.
       const crossing=bubbles.find(b=>b.start<best && best<b.end);
       if(crossing && crossing.start>start) best=crossing.start;
+      // A bubble at the start of a page should remain intact if it fits.
+      // Only an individually oversized bubble may fall back to text splitting.
+      if(crossing && crossing.start===start) {
+        const whole=crossing.end;
+        if(fitsRange(el,whole)) best=Math.max(best,whole);
+      }
       if(best===start)best=start+1;
       if(best<positions.total){
         const [a,ao]=(()=>{for(const x of positions.nodes)if(best<x.end)return [x.node,best-x.start];return [null,0];})();
