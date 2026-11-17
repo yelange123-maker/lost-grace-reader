@@ -5,7 +5,7 @@
   if (window.__littleFishReaderLoaded) return;
   window.__littleFishReaderLoaded = true;
   const $ = (selector, root = document) => root.querySelector(selector);
-  const state = { root: null, raw: '', pages: [], spread: 0, font: 20, timer: 0, resize: null, observer: null, lastTouch: null, swiped: 0, tools: false, sourceMessage: null, richSource: null, turning: false, flipLayer: null, flipTimer: null, align: true, excludedTags: ['thinking','think','visible-analysis','status_panel','status_collect','status_sex','Jiang_StatusBar','Shan_StatusBar','baisui_status','details'] };
+  const state = { root: null, raw: '', pages: [], spread: 0, font: 20, timer: 0, resize: null, observer: null, lastTouch: null, swiped: 0, tools: false, sourceMessage: null, richSource: null, turning: false, flipLayer: null, flipTimer: null, align: true, showPenguin: false, excludedTags: ['thinking','think','visible-analysis','status_panel','status_collect','status_sex','Jiang_StatusBar','Shan_StatusBar','baisui_status','details'] };
   const cssFont = () => state.root?.style.setProperty('--lfr-font', state.font + 'px');
   // Read the *rendered* message, respecting the original page's visibility rules.
   // This is intentionally text-first: rich HTML pagination remains a later milestone.
@@ -21,9 +21,10 @@
     const saved = JSON.parse(localStorage.getItem(settingKey) || '{}');
     if (Array.isArray(saved.excludedTags)) state.excludedTags = saved.excludedTags.filter(x => typeof x === 'string' && /^[\w-]+$/.test(x)).slice(0, 80);
     if (typeof saved.align === 'boolean') state.align = saved.align;
+    if (typeof saved.showPenguin === 'boolean') state.showPenguin = saved.showPenguin;
   } catch (_) {}
   function saveSettings() {
-    try { localStorage.setItem(settingKey, JSON.stringify({ excludedTags: state.excludedTags, align: state.align })); } catch (_) {}
+    try { localStorage.setItem(settingKey, JSON.stringify({ excludedTags: state.excludedTags, align: state.align, showPenguin: state.showPenguin })); } catch (_) {}
   }
   function alignBook() {
     if (!state.root) return;
@@ -86,6 +87,27 @@
     'elegant-slate-container', 'slate-scene-no', 'slate-title',
     'slate-meta-block', 'slate-location', 'slate-time-weather', 'slate-atmosphere'
   ]);
+  // Penguin regex beautifier: rebuild only this known component from rendered
+  // text, without importing arbitrary source HTML, styles, or remote markup.
+  const penguinFaces = Object.freeze({
+    normal:'https://i.postimg.cc/y8q5tgCv/Screenshot-2026-04-20-17-19-18-456-com-xingin-xhs.png',
+    playful:'https://i.postimg.cc/Twfj8xtm/Screenshot-2026-04-20-21-30-09-202-com-xingin-xhs.png',
+    serious:'https://i.postimg.cc/159d0hPN/Screenshot-2026-04-20-21-28-36-146-com-xingin-xhs.png',
+    sad:'https://i.postimg.cc/gkF3PzVB/Screenshot-2026-04-21-17-54-57-203-com-discord.png',
+    rebut:'https://i.postimg.cc/bJnd6nFK/Screenshot-2026-04-21-19-17-20-142-com-xingin-xhs.png',
+    lewd:'https://i.postimg.cc/4yJZzhC2/Screenshot-2026-04-20-20-57-59-469-com-xingin-xhs.png'
+  });
+  function penguinKind(el) {
+    if (el.tagName !== 'SPAN') return null;
+    return Object.keys(penguinFaces).find(kind => el.classList.contains('dm-' + kind)) || null;
+  }
+  function penguinBubble(kind, text) {
+    const box=document.createElement('span');box.className='lfr-penguin lfr-penguin-'+kind;
+    const avatar=document.createElement('span');avatar.className='lfr-penguin-avatar';
+    avatar.style.backgroundImage='url("'+penguinFaces[kind]+'")';
+    const bubble=document.createElement('span');bubble.className='lfr-penguin-bubble';
+    bubble.textContent=text;box.append(avatar,bubble);return box;
+  }
   const richTags = new Set(['P','DIV','SPAN','EM','I','STRONG','B','U','S','DEL','BLOCKQUOTE','BR','H1','H2','H3','H4','H5','H6','UL','OL','LI','CODE','PRE','SMALL','SUP','SUB','MARK']);
   const richBlocks = new Set(['P','DIV','BLOCKQUOTE','H1','H2','H3','H4','H5','H6','UL','OL','LI','PRE']);
   // Reconstruct a trusted Slate component from the ORIGINAL message when
@@ -163,6 +185,16 @@
       if (node.nodeType !== Node.ELEMENT_NODE) return;
       const el = node;
       if (el.matches(excluded) || skipReaderComponent(el) || isInvisible(el) || state.excludedTags.some(t => el.tagName.toLowerCase() === t.toLowerCase())) return;
+      const penguin=penguinKind(el);
+      if (penguin) {
+        // Disabled = the same ordinary spoken text as v0.3.28; enabled = bubble.
+        // The original regex emits an avatar span and a text span.
+        const words=el.querySelector(':scope > span:not(.dm-avatar)');
+        const spoken=(words || el).textContent || '';
+        if (state.showPenguin) parent.append(penguinBubble(penguin,spoken));
+        else parent.append(document.createTextNode(spoken));
+        return;
+      }
       const tag = richTags.has(el.tagName) ? el.tagName.toLowerCase() : 'span';
       const out = document.createElement(tag);
       for (const cls of el.classList) if (slateClasses.has(cls)) out.classList.add(cls);
@@ -230,6 +262,10 @@
     const left=$('[data-page="left"]',state.root),right=$('[data-page="right"]',state.root);
     left.replaceChildren();right.replaceChildren();state.pages=[];
     const source=state.richSource,positions=textPositions(source);
+    const bubbles=[...source.querySelectorAll('.lfr-penguin')].map(el=>{
+      const nodes=positions.nodes.filter(n=>el.contains(n.node));
+      return nodes.length?{start:nodes[0].start,end:nodes[nodes.length-1].end}:null;
+    }).filter(Boolean);
     let start=0,guard=0;
     const fitsRange=(el,end)=>{
       el.replaceChildren(rangeSlice(source,positions,start,end));
@@ -239,6 +275,10 @@
       const el=state.pages.length%2?right:left;
       let lo=start+1,hi=positions.total,best=start;
       while(lo<=hi){const mid=Math.floor((lo+hi)/2);if(fitsRange(el,mid)){best=mid;lo=mid+1;}else hi=mid-1;}
+      // Keep an entire bubble on one page whenever it can fit there.
+      // Oversized bubbles retain normal character-level pagination as fallback.
+      const crossing=bubbles.find(b=>b.start<best && best<b.end);
+      if(crossing && crossing.start>start) best=crossing.start;
       if(best===start)best=start+1;
       if(best<positions.total){
         const [a,ao]=(()=>{for(const x of positions.nodes)if(best<x.end)return [x.node,best-x.start];return [null,0];})();
@@ -298,7 +338,7 @@
   }
   function buildOverlay() {
     const root = document.createElement('div'); root.id = 'lfr-root';
-    root.innerHTML = `<div class="lfr-backdrop"></div><section class="lfr-book" role="dialog" aria-modal="true" aria-label="小鱼阅读器"><div class="lfr-tools"><span class="lfr-title">小鱼阅读器 · 测试版</span><button data-action="smaller" title="缩小字号">A−</button><button data-action="larger" title="放大字号">A+</button><button data-action="close" title="退出阅读模式">退出 ✕</button><button data-action="settings" title="阅读设置">⚙</button></div><div class="lfr-settings" hidden><label><input type="checkbox" class="lfr-align-toggle" checked> 对齐酒馆聊天区域</label><label for="lfr-tags">清洗标签（每行一个标签名，不带尖括号）</label><textarea id="lfr-tags" spellcheck="false"></textarea><div class="lfr-settings-actions"><button data-action="save-settings">保存并重新排版</button><button data-action="cancel-settings">取消</button></div></div><div class="lfr-pages"><article class="lfr-page" data-page="left"></article><article class="lfr-page" data-page="right"></article><span class="lfr-num lfr-num-left"></span><span class="lfr-num lfr-num-right"></span><div class="lfr-notice" aria-live="polite"></div></div></section>`;
+    root.innerHTML = `<div class="lfr-backdrop"></div><section class="lfr-book" role="dialog" aria-modal="true" aria-label="小鱼阅读器"><div class="lfr-tools"><span class="lfr-title">小鱼阅读器 · 测试版</span><button data-action="smaller" title="缩小字号">A−</button><button data-action="larger" title="放大字号">A+</button><button data-action="close" title="退出阅读模式">退出 ✕</button><button data-action="settings" title="阅读设置">⚙</button></div><div class="lfr-settings" hidden><label><input type="checkbox" class="lfr-align-toggle" checked> 对齐酒馆聊天区域</label><label><input type="checkbox" class="lfr-penguin-toggle"> 显示企鹅弹幕（头像＋气泡）</label><label for="lfr-tags">清洗标签（每行一个标签名，不带尖括号）</label><textarea id="lfr-tags" spellcheck="false"></textarea><div class="lfr-settings-actions"><button data-action="save-settings">保存并重新排版</button><button data-action="cancel-settings">取消</button></div></div><div class="lfr-pages"><article class="lfr-page" data-page="left"></article><article class="lfr-page" data-page="right"></article><span class="lfr-num lfr-num-left"></span><span class="lfr-num lfr-num-right"></span><div class="lfr-notice" aria-live="polite"></div></div></section>`;
     document.body.append(root);
     state.root = root;
     cssFont();
@@ -324,6 +364,7 @@
         panel.hidden = !panel.hidden;
         if (!panel.hidden) {
           $('.lfr-align-toggle', panel).checked = state.align;
+          $('.lfr-penguin-toggle', panel).checked = state.showPenguin;
           $('#lfr-tags', panel).value = state.excludedTags.join('\n');
           root.classList.add('lfr-show-tools');
         }
@@ -333,6 +374,7 @@
       if (action === 'save-settings') {
         const panel = $('.lfr-settings', root);
         state.align = $('.lfr-align-toggle', panel).checked;
+        state.showPenguin = $('.lfr-penguin-toggle', panel).checked;
         state.excludedTags = [...new Set($('#lfr-tags', panel).value.split(/[\n,，]+/).map(x => x.trim().replace(/^<|>$/g, '')).filter(x => /^[\w-]+$/.test(x)))].slice(0,80);
         saveSettings(); panel.hidden = true;
         if (state.sourceMessage) { state.raw = getMessageText(state.sourceMessage); state.richSource = richSnapshot(state.sourceMessage); }
