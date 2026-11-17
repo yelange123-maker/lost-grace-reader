@@ -279,3 +279,21 @@
   border:1px solid rgba(255,255,255,.4);border-radius:22px;padding:8px 16px;
   box-shadow:0 6px 20px rgba(0,0,0,.05),inset 0 1px 0 rgba(255,255,255,.5);
 }
+
+/* v0.3.33: Penguin bubbles are inline chat inserts, not a new prose scene.
+   Keep their paragraph wrappers from inheriting the novel's 1em block spacing.
+   These rules also apply to pagination measurement (same .lfr-page DOM). */
+#lfr-root .lfr-page.lfr-rich-page :is(p,blockquote):has(.lfr-penguin) {
+  margin-top:2px;
+  margin-bottom:2px;
+}
+#lfr-root .lfr-page.lfr-rich-page :is(p,blockquote):has(.lfr-penguin) + :is(p,blockquote) {
+  margin-top:2px;
+}
+#lfr-root .lfr-page .lfr-penguin {
+  margin:2px 0;
+  vertical-align:middle;
+}
+
+#lfr-root .lfr-page.lfr-rich-page .lfr-penguin-block {margin-top:2px; margin-bottom:2px;}
+#lfr-root .lfr-page.lfr-rich-page .lfr-penguin-block + :is(p,blockquote) {margin-top:2px;}

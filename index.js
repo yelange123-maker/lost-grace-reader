@@ -177,6 +177,38 @@
   // The penguin switch controls the entire component, not merely its skin.
   // Reconcile rendered text against raw chat markers, just as Slate recovery
   // reconciles rendered layout with the original structured message.
+  // Remove empty containers left behind when a whole penguin component is filtered.
+  // Do this BEFORE pagination: hiding only the text leaves paragraph margins and
+  // whitespace-only wrappers in the measured page flow.
+  function prunePenguinGap(node, snapshot) {
+    let current = node?.nodeType === Node.ELEMENT_NODE ? node : node?.parentElement;
+    while (current && current !== snapshot) {
+      const parent = current.parentElement;
+      if (!parent) break;
+      // Never collapse Slate or another styled component's structural wrapper.
+      if (current.closest('.elegant-slate-container,.lfr-penguin')) break;
+      if (current.textContent.trim() || current.querySelector('img,svg,video,canvas,.elegant-slate-container,.lfr-penguin')) break;
+      // A lone <br> left in a now-empty paragraph is an artifact, not prose.
+      if (current.matches('p,div,span,blockquote') &&
+          !current.querySelector('hr,table,ul,ol')) {
+        current.remove();
+        current = parent;
+      } else break;
+    }
+  }
+  // Treat penguin-only paragraphs as compact inline inserts. The generic
+  // novel paragraph rule adds 1em before adjacent blocks; a chat bubble
+  // should not reserve that spacing (including when later hidden).
+  function compactPenguinBlocks(snapshot) {
+    for (const bubble of snapshot.querySelectorAll('.lfr-penguin')) {
+      const block = bubble.closest('p,blockquote');
+      if (!block || !snapshot.contains(block)) continue;
+      // Only alter blocks whose visible content is this one penguin component.
+      const other = block.textContent.replace(bubble.textContent, '').trim();
+      if (other) continue;
+      block.classList.add('lfr-penguin-block');
+    }
+  }
   function restorePenguins(snapshot, mes) {
     const raw = originalMessage(mes);
     const tokens = raw ? [...raw.matchAll(/\[企鹅说\|(normal|playful|serious|sad|rebut|lewd)\|([^\]]+)\]/g)] : [];
@@ -226,8 +258,11 @@
       if (first[0].parentElement?.closest('.lfr-penguin') || last[0].parentElement?.closest('.lfr-penguin')) continue;
       const range = document.createRange();
       range.setStart(first[0], first[1]); range.setEnd(last[0], last[1]);
+      // Capture the containing element before Range.deleteContents() splits it.
+      const host = first[0].parentElement;
       range.deleteContents();
       if (state.showPenguin) range.insertNode(penguinBubble(kind, spoken));
+      else prunePenguinGap(host, snapshot);
       matched++;
     }
     console.info('[Little Fish Reader] Penguin:', state.showPenguin ? 'shown' : 'hidden', matched, 'of', tokens.length);
@@ -275,6 +310,15 @@
     else for (const child of source.childNodes) copy(child,wrapper);
     restoreSlate(wrapper,mes);
     restorePenguins(wrapper,mes);
+    compactPenguinBlocks(wrapper);
+    // Also handle a regex-rendered dm-* component that was skipped in copy().
+    // It may have left an empty parent block that still carries margin/padding.
+    if (!state.showPenguin) {
+      for (const el of [...wrapper.querySelectorAll('p,div,span,blockquote')].reverse()) {
+        if (el.closest('.elegant-slate-container,.lfr-penguin')) continue;
+        if (!el.textContent.trim() && !el.querySelector('img,svg,video,canvas,hr,table,ul,ol')) el.remove();
+      }
+    }
     return wrapper;
   }
   function textPositions(root) {
