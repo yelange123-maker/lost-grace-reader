@@ -7,14 +7,70 @@
   const $ = (selector, root = document) => root.querySelector(selector);
   const state = { root: null, raw: '', pages: [], spread: 0, font: 20, timer: 0, resize: null, observer: null, lastTouch: null, swiped: 0, tools: false, sourceMessage: null };
   const cssFont = () => state.root?.style.setProperty('--lfr-font', state.font + 'px');
+  // Read the *rendered* message, respecting the original page's visibility rules.
+  // This is intentionally text-first: rich HTML pagination remains a later milestone.
+  function sourceNode(mes) { return $('.mes_text', mes) || $('.mes-text', mes); }
+  function isInvisible(el) {
+    if (el.hidden || el.getAttribute('aria-hidden') === 'true' || el.hasAttribute('inert')) return true;
+    const st = getComputedStyle(el);
+    return st.display === 'none' || st.visibility === 'hidden' || st.visibility === 'collapse' ||
+      Number(st.opacity) === 0 || st.contentVisibility === 'hidden';
+  }
   function getMessageText(mes) {
-    const node = $('.mes_text', mes) || $('.mes-text', mes);
+    const node = sourceNode(mes);
     if (!node) return '';
-    const clone = node.cloneNode(true);
-    clone.querySelectorAll('script,style,button,input,textarea,select,.mes_buttons,.mes_button').forEach(n => n.remove());
-    clone.querySelectorAll('br').forEach(n => n.replaceWith('\n'));
-    clone.querySelectorAll('p,div,blockquote,li,h1,h2,h3,h4,pre').forEach(n => n.append('\n\n'));
-    return (clone.textContent || '').replace(/\u00a0/g, ' ').replace(/\n[ \t]+/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+    const excluded = 'script,style,template,button,input,textarea,select,svg,canvas,.mes_buttons,.mes_button,.lfr-launch';
+    const blocks = new Set(['P','DIV','BLOCKQUOTE','LI','H1','H2','H3','H4','H5','H6','PRE','SECTION','ARTICLE']);
+    const chunks = [];
+    function walk(n) {
+      if (n.nodeType === Node.TEXT_NODE) { chunks.push(n.nodeValue || ''); return; }
+      if (n.nodeType !== Node.ELEMENT_NODE) return;
+      const el = n;
+      if (el.matches(excluded) || isInvisible(el)) return;
+      // Closed <details> may show only its summary, not its hidden body.
+      if (el.tagName === 'DETAILS' && !el.open) {
+        const summary = Array.from(el.children).find(c => c.tagName === 'SUMMARY');
+        if (summary) walk(summary);
+        return;
+      }
+      if (el.tagName === 'BR') { chunks.push('\n'); return; }
+      const block = blocks.has(el.tagName);
+      if (block && chunks.length) chunks.push('\n\n');
+      for (const child of el.childNodes) walk(child);
+      if (block) chunks.push('\n\n');
+    }
+    walk(node);
+    return chunks.join('').replace(/\u00a0/g, ' ').replace(/\r\n?/g, '\n')
+      .replace(/\n[ \t]+/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+  }
+  function inheritAppearance(mes) {
+    if (!state.root) return;
+    const node = sourceNode(mes);
+    if (!node) return;
+    // Sample a visible text-bearing descendant, avoiding hidden regex/HTML blocks.
+    let sample = node;
+    for (const el of node.querySelectorAll('p,span,div')) {
+      if (!isInvisible(el) && (el.textContent || '').trim() &&
+          !el.parentElement?.closest('[hidden],[aria-hidden="true"]')) {
+        sample = el; break;
+      }
+    }
+    const cs = getComputedStyle(sample);
+    const base = getComputedStyle(node);
+    const root = state.root;
+    const fontFamily = cs.fontFamily || base.fontFamily;
+    if (fontFamily) root.style.setProperty('--lfr-family', fontFamily);
+    const ink = cs.color || base.color;
+    if (ink && ink !== 'rgba(0, 0, 0, 0)') root.style.setProperty('--lfr-ink', ink);
+    const size = parseFloat(cs.fontSize) || parseFloat(base.fontSize);
+    if (Number.isFinite(size) && size >= 10 && size <= 48) state.font = Math.round(size);
+    const spacing = cs.letterSpacing;
+    root.style.setProperty('--lfr-tracking', spacing && spacing !== 'normal' ? spacing : 'normal');
+    // Retain reader's own safe line-height unless source has a numeric usable value.
+    const line = parseFloat(cs.lineHeight);
+    if (Number.isFinite(line) && size && line / size >= 1 && line / size <= 3)
+      root.style.setProperty('--lfr-leading', String(line / size));
+    cssFont();
   }
   function isAI(mes) {
     if (mes.classList.contains('is_user') || mes.getAttribute('is_user') === 'true') return false;
@@ -117,6 +173,7 @@
     if(!text)return;
     if(!state.root)buildOverlay();
     state.sourceMessage=mes;state.raw=text;state.spread=0;
+    inheritAppearance(mes);
     state.root.hidden=false;state.root.classList.remove('lfr-show-tools');
     schedule();
   }
