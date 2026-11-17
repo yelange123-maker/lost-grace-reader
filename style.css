@@ -242,12 +242,10 @@
 #lfr-root[data-lfr-debug="opaque"] .lfr-flip-stationary::before,
 #lfr-root[data-lfr-debug="opaque"] .lfr-flip-face::before{display:none!important}
 
-/* v0.3.23 VISUAL TEST: one shared translucent paper tint.
-   The book's ::before already paints #17191ce8 beneath the entire spread.
-   Repainting that tint on stationary/rotating faces compounds alpha and
-   makes the tavern background disappear during turns. Keep page content,
-   3D geometry, face shading, masks and timings unchanged. */
-#lfr-root:not([data-lfr-debug="opaque"]) .lfr-flip-stationary::before,
-#lfr-root:not([data-lfr-debug="opaque"]) .lfr-flip-face::before {
+/* v0.3.24 VISUAL TEST: only the stationary duplicate shares the book tint.
+   Keep the rotating faces' original translucent paper backgrounds, so
+   the moving sheet retains its physical surface and edge shading.
+   Opaque diagnostic mode continues to override this experiment. */
+#lfr-root:not([data-lfr-debug="opaque"]) .lfr-flip-stationary::before {
   background:transparent;
 }
