@@ -139,6 +139,9 @@
 #lfr-root .lfr-flip-backward.lfr-flip-go{transform:rotateY(180deg)}
 #lfr-root .lfr-flip-stationary:has(+ .lfr-flip-forward){left:0}
 #lfr-root .lfr-flip-stationary:has(+ .lfr-flip-backward){right:0}
-#lfr-root.lfr-flipping .lfr-pages>.lfr-page{visibility:hidden}
+/* Destination pages stay visible beneath the old stationary page and the
+   rotating sheet. Hiding them caused the blank half-page in v0.3.11. */
+#lfr-root .lfr-flip-stationary:has(+ .lfr-flip-forward){left:0}
+#lfr-root .lfr-flip-stationary:has(+ .lfr-flip-backward){right:0}
 @media(orientation:portrait){#lfr-root .lfr-flip-layer{display:none}}
 @media(prefers-reduced-motion:reduce){#lfr-root .lfr-flip-sheet{transition:none}}

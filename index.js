@@ -427,6 +427,9 @@
     const front=document.createElement('div');front.className='lfr-flip-face lfr-flip-front';
     const back=document.createElement('div');back.className='lfr-flip-face lfr-flip-back';
     const cloneInto=(target,source)=>{target.classList.add('lfr-page');if(source.classList.contains('lfr-rich-page'))target.classList.add('lfr-rich-page');target.replaceChildren(...Array.from(source.childNodes).map(n=>n.cloneNode(true)));};
+    // The real pages have already rendered the destination spread. Keep them
+    // visible as the underlay; only cover the stationary old page and the
+    // turning sheet. This prevents a blank half during either direction.
     cloneInto(stationary,direction>0?oldLeft:oldRight);
     cloneInto(front,direction>0?oldRight:oldLeft);
     cloneInto(back,direction>0?newLeft:newRight);
