@@ -38,7 +38,7 @@
     const r = chat.getBoundingClientRect();
     if (r.width < 320 || r.height < 250) return;
     const pad = 2;
-    const topInset = 16; // Keep the top fade and toolbar clear of the chat viewport edge.
+    const topInset = 12; // Keep the top fade and toolbar clear of the chat viewport edge.
     book.classList.add('lfr-aligned');
     book.style.left = Math.round(r.left + pad) + 'px';
     book.style.top = Math.round(r.top + pad + topInset) + 'px';
