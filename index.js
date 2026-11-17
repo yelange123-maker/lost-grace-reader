@@ -55,13 +55,7 @@
       if (n.nodeType === Node.TEXT_NODE) { chunks.push(n.nodeValue || ''); return; }
       if (n.nodeType !== Node.ELEMENT_NODE) return;
       const el = n;
-      if (el.matches(excluded) || isInvisible(el) || state.excludedTags.some(tag => el.tagName.toLowerCase() === tag.toLowerCase())) return;
-      // Closed <details> may show only its summary, not its hidden body.
-      if (el.tagName === 'DETAILS' && !el.open) {
-        const summary = Array.from(el.children).find(c => c.tagName === 'SUMMARY');
-        if (summary) walk(summary);
-        return;
-      }
+      if (el.matches(excluded) || skipReaderComponent(el) || isInvisible(el) || state.excludedTags.some(tag => el.tagName.toLowerCase() === tag.toLowerCase())) return;
       if (el.tagName === 'BR') { chunks.push('\n'); return; }
       const block = blocks.has(el.tagName);
       if (block && chunks.length) chunks.push('\n\n');
@@ -74,6 +68,12 @@
   }
   // Build a safe, styled snapshot from the rendered SillyTavern message.
   // No raw HTML injection: only allowlisted elements and text nodes are copied.
+  // Reader-only filter: folded panels are UI, not novel prose.
+  // Exclude the whole details subtree, including its summary.
+  // Keep this separate from editable tag exclusions.
+  function skipReaderComponent(el) {
+    return el.tagName === 'DETAILS';
+  }
   const richTags = new Set(['P','DIV','SPAN','EM','I','STRONG','B','U','S','DEL','BLOCKQUOTE','BR','H1','H2','H3','H4','H5','H6','UL','OL','LI','CODE','PRE','SMALL','SUP','SUB','MARK']);
   const richBlocks = new Set(['P','DIV','BLOCKQUOTE','H1','H2','H3','H4','H5','H6','UL','OL','LI','PRE']);
   function richSnapshot(mes) {
@@ -86,12 +86,7 @@
       if (node.nodeType === Node.TEXT_NODE) { parent.append(document.createTextNode(node.nodeValue || '')); return; }
       if (node.nodeType !== Node.ELEMENT_NODE) return;
       const el = node;
-      if (el.matches(excluded) || isInvisible(el) || state.excludedTags.some(t => el.tagName.toLowerCase() === t.toLowerCase())) return;
-      if (el.tagName === 'DETAILS') {
-        if (!el.open) { const summary = el.querySelector(':scope > summary'); if (summary) copy(summary, parent); return; }
-        for (const child of el.childNodes) if (child.nodeType !== Node.ELEMENT_NODE || child.tagName !== 'SUMMARY') copy(child,parent);
-        return;
-      }
+      if (el.matches(excluded) || skipReaderComponent(el) || isInvisible(el) || state.excludedTags.some(t => el.tagName.toLowerCase() === t.toLowerCase())) return;
       const tag = richTags.has(el.tagName) ? el.tagName.toLowerCase() : 'span';
       const out = document.createElement(tag);
       const cs = getComputedStyle(el);
