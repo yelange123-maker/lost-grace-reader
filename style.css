@@ -115,3 +115,10 @@
   margin-top:1.2em; font-size:.85em; line-height:1.6; font-style:italic;
   opacity:.8; padding-left:18px; white-space:pre-wrap;
 }
+
+/* v0.3.8: scene typography wins over the generic reader reset. */
+#lfr-root .lfr-page.lfr-rich-page div.slate-title{font-size:1.8em;line-height:1.35;font-weight:700;margin-bottom:.8em;font-family:"Noto Serif SC","Songti SC","SimSun",serif}
+#lfr-root .lfr-page.lfr-rich-page div.slate-meta-block{display:flex;flex-direction:column;gap:.3em;border-left:2px solid currentColor;padding-left:12px;margin-left:4px}
+#lfr-root .lfr-page.lfr-rich-page div.slate-scene-no{display:flex;align-items:center;margin-bottom:.6em;font-size:.85em;letter-spacing:.15em;opacity:.6}
+#lfr-root .lfr-page.lfr-rich-page div.slate-atmosphere{margin-top:1.2em;padding-left:18px;font-size:.85em;line-height:1.6;font-style:italic;white-space:pre-wrap}
+#lfr-root .lfr-page.lfr-rich-page .lfr-slate-continuation{margin-top:0}

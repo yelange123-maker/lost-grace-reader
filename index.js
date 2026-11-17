@@ -107,16 +107,20 @@
       // transforms, user HTML event handlers, or source CSS selectors can leak in.
       if (cs.color) out.style.color = cs.color;
       if (cs.fontStyle !== 'normal') out.style.fontStyle = cs.fontStyle;
-      if (cs.fontWeight !== '400' && cs.fontWeight !== 'normal') out.style.fontWeight = cs.fontWeight;
+      if (!el.classList.contains('slate-title') && !el.classList.contains('slate-location') && cs.fontWeight !== '400' && cs.fontWeight !== 'normal') out.style.fontWeight = cs.fontWeight;
       if (cs.textDecorationLine && cs.textDecorationLine !== 'none') out.style.textDecorationLine = cs.textDecorationLine;
       if (cs.textDecorationColor && cs.textDecorationColor !== 'currentcolor') out.style.textDecorationColor = cs.textDecorationColor;
-      if (cs.fontFamily) out.style.fontFamily = cs.fontFamily;
+      // Allowlist layout typography takes precedence over the source's computed font.
+      if (cs.fontFamily && !el.classList.contains('slate-title')) out.style.fontFamily = cs.fontFamily;
       // Retain theme's explicit quote/italic/underline colors as computed by the browser.
       // The source's typography is the authority; no hard-coded theme color constants.
       parent.append(out);
       for (const child of el.childNodes) copy(child,out);
     }
-    for (const child of source.childNodes) copy(child,wrapper);
+    // Copy the source element itself when it is an allowlisted component.
+    // Previously its class was lost because only source.childNodes were copied.
+    if ([...source.classList].some(c => slateClasses.has(c))) copy(source,wrapper);
+    else for (const child of source.childNodes) copy(child,wrapper);
     return wrapper;
   }
   function textPositions(root) {
@@ -134,7 +138,28 @@
     };
     const [a,ao]=locate(start),[b,bo]=locate(end);
     const range=document.createRange();range.setStart(a,ao);range.setEnd(b,bo);
-    return range.cloneContents();
+    const fragment = range.cloneContents();
+    // Range.cloneContents() omits ancestors of its starting text node.
+    // If a page starts mid-Slate, restore the missing allowlisted wrapper(s)
+    // so the scoped component stylesheet still applies on continuation pages.
+    let ancestor = a.parentElement;
+    const missing = [];
+    while (ancestor && ancestor !== source) {
+      if (ancestor.classList.contains('elegant-slate-container')) {
+        missing.push(ancestor);
+        break;
+      }
+      ancestor = ancestor.parentElement;
+    }
+    if (missing.length && !fragment.querySelector('.elegant-slate-container')) {
+      const slate = document.createElement('div');
+      slate.className = 'elegant-slate-container lfr-slate-continuation';
+      slate.append(fragment);
+      const wrapped = document.createDocumentFragment();
+      wrapped.append(slate);
+      return wrapped;
+    }
+    return fragment;
   }
   function richPaginate() {
     const left=$('[data-page="left"]',state.root),right=$('[data-page="right"]',state.root);
