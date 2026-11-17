@@ -204,3 +204,15 @@
 #lfr-root .lfr-flip-sheet {transition-duration:640ms;transition-timing-function:linear}
 /* The apparent giant folio came from overlapping original and temporary folios. */
 #lfr-root .lfr-flip-number {font-size:13px;line-height:1}
+
+/* v0.3.19: retain the old live spread until the turn completes. */
+#lfr-root .lfr-flip-stationary.lfr-stationary-right{left:50%;right:auto}
+#lfr-root .lfr-flip-stationary.lfr-stationary-left{left:0;right:auto}
+/* Old live folios stay at their normal size; the turning folio is independent. */
+#lfr-root.lfr-flipping .lfr-pages > .lfr-num{visibility:visible}
+#lfr-root .lfr-flip-number{font-size:13px}
+#lfr-root .lfr-flip-outgoing{position:absolute;top:0;bottom:0;width:50%;box-sizing:border-box;z-index:9;pointer-events:none;overflow:hidden;opacity:1;transition:opacity 120ms ease-out;background:#17191ce8}
+#lfr-root .lfr-flip-outgoing.lfr-outgoing-left{left:0}
+#lfr-root .lfr-flip-outgoing.lfr-outgoing-right{right:0}
+#lfr-root .lfr-flip-outgoing.lfr-outgoing-fade{opacity:0}
+#lfr-root .lfr-flip-outgoing .lfr-flip-number{bottom:12px}

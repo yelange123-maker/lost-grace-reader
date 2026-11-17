@@ -410,44 +410,58 @@
   }
   function turn(direction) {
     if (state.turning) return;
-    const next=state.spread+direction;
+    const oldSpread=state.spread, next=oldSpread+direction;
     if(next<0||next>=Math.ceil(state.pages.length/2))return;
     const pages=$('.lfr-pages',state.root);
-    const left=$('[data-page="left"]',pages), right=$('[data-page="right"]',pages);
-    // Single-column layout and reduced-motion preferences retain instant turns.
-    if (getComputedStyle(right).display === 'none' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const left=$('[data-page="left"]',pages),right=$('[data-page="right"]',pages);
+    if(getComputedStyle(right).display==='none'||window.matchMedia('(prefers-reduced-motion: reduce)').matches){
       state.spread=next;render();return;
     }
+    // Snapshot both spreads without leaving the destination in the live DOM.
+    // Keeping the original spread visible is essential for translucent paper.
     const oldLeft=left.cloneNode(true),oldRight=right.cloneNode(true);
     state.spread=next;render();
     const newLeft=left.cloneNode(true),newRight=right.cloneNode(true);
+    state.spread=oldSpread;render();
     const layer=document.createElement('div');layer.className='lfr-flip-layer';
     const stationary=document.createElement('div');stationary.className='lfr-flip-stationary';
     const sheet=document.createElement('div');sheet.className='lfr-flip-sheet '+(direction>0?'lfr-flip-forward':'lfr-flip-backward');
     const front=document.createElement('div');front.className='lfr-flip-face lfr-flip-front';
     const back=document.createElement('div');back.className='lfr-flip-face lfr-flip-back';
-    const cloneInto=(target,source)=>{target.classList.add('lfr-page');if(source.classList.contains('lfr-rich-page'))target.classList.add('lfr-rich-page');target.replaceChildren(...Array.from(source.childNodes).map(n=>n.cloneNode(true)));};
-    // The real pages have already rendered the destination spread. Keep them
-    // visible as the underlay; only cover the stationary old page and the
-    // turning sheet. This prevents a blank half during either direction.
-    cloneInto(stationary,direction>0?oldLeft:oldRight);
+    const cloneInto=(target,source)=>{
+      target.classList.add('lfr-page');
+      if(source.classList.contains('lfr-rich-page'))target.classList.add('lfr-rich-page');
+      target.replaceChildren(...Array.from(source.childNodes).map(n=>n.cloneNode(true)));
+    };
+    // The opposite destination page must be visible as the turning sheet lifts.
+    // The stationary old page is the actual original DOM, not a transparent clone
+    // laid over prematurely rendered destination content.
+    cloneInto(stationary,direction>0?newRight:newLeft);
+    stationary.classList.add(direction>0?'lfr-stationary-right':'lfr-stationary-left');
     cloneInto(front,direction>0?oldRight:oldLeft);
     cloneInto(back,direction>0?newLeft:newRight);
-    // Page numbers normally sit outside the text pages; clone them for flip faces.
     const numberFor=(spread,side)=>{const index=spread*2+(side==='right'?1:0);return state.pages[index]?String(index+1):'';};
     const addNumber=(el,value)=>{if(!value)return;const num=document.createElement('div');num.className='lfr-flip-number';num.textContent=value;el.append(num);};
-    const oldSpread=next-direction;
-    addNumber(stationary,numberFor(oldSpread,direction>0?'left':'right'));
+    addNumber(stationary,numberFor(next,direction>0?'right':'left'));
     addNumber(front,numberFor(oldSpread,direction>0?'right':'left'));
     addNumber(back,numberFor(next,direction>0?'left':'right'));
     sheet.append(front,back);layer.append(stationary,sheet);pages.append(layer);
     state.flipLayer=layer;state.turning=true;state.root.classList.add('lfr-flipping');
-    // Commit the initial transform before beginning the animation.
     void sheet.offsetWidth;
-    const finish=()=>{if(state.flipLayer===layer)clearFlip();};
-    // Listen before starting the transition; cleanup as soon as the rotating
-    // transform finishes. The fallback is timed from the *actual* start frame,
-    // not from the click, so it does not cut the motion short on slow devices.
+    const finish=()=>{
+      if(state.flipLayer!==layer)return;
+      // Replace the live spread only when the physical page has landed.
+      state.spread=next;render();
+      // Dissolve the old stationary page rather than making it vanish abruptly.
+      const outgoing=document.createElement('div');
+      outgoing.className='lfr-flip-outgoing '+(direction>0?'lfr-outgoing-left':'lfr-outgoing-right');
+      cloneInto(outgoing,direction>0?oldLeft:oldRight);
+      addNumber(outgoing,numberFor(oldSpread,direction>0?'left':'right'));
+      pages.append(outgoing);
+      clearFlip();
+      requestAnimationFrame(()=>outgoing.classList.add('lfr-outgoing-fade'));
+      setTimeout(()=>outgoing.remove(),150);
+    };
     sheet.addEventListener('transitionend',e=>{
       if(e.target===sheet&&e.propertyName==='transform')finish();
     });
@@ -455,7 +469,6 @@
     requestAnimationFrame(()=>{
       if(state.flipLayer!==layer)return;
       sheet.classList.add('lfr-flip-go');
-      // Transitionend normally clears the layer; this is only a fallback.
       state.flipTimer=setTimeout(finish,680);
     });
   }
