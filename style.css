@@ -122,3 +122,23 @@
 #lfr-root .lfr-page.lfr-rich-page div.slate-scene-no{display:flex;align-items:center;margin-bottom:.6em;font-size:.85em;letter-spacing:.15em;opacity:.6}
 #lfr-root .lfr-page.lfr-rich-page div.slate-atmosphere{margin-top:1.2em;padding-left:18px;font-size:.85em;line-height:1.6;font-style:italic;white-space:pre-wrap}
 #lfr-root .lfr-page.lfr-rich-page .lfr-slate-continuation{margin-top:0}
+
+
+/* v0.3.11: click-triggered 3D paper flip. All layers are temporary DOM clones. */
+#lfr-root .lfr-pages{perspective:1600px;perspective-origin:50% 50%}
+#lfr-root .lfr-flip-layer{position:absolute;inset:0;z-index:8;pointer-events:none;transform-style:preserve-3d}
+#lfr-root .lfr-flip-stationary{position:absolute;top:0;bottom:0;width:50%;box-sizing:border-box;background:#17191c;overflow:hidden}
+#lfr-root .lfr-flip-sheet{position:absolute;top:0;bottom:0;width:50%;transform-style:preserve-3d;transition:transform 640ms cubic-bezier(.22,.61,.36,1);will-change:transform}
+#lfr-root .lfr-flip-face{position:absolute;inset:0;box-sizing:border-box;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:#17191c}
+#lfr-root .lfr-flip-face::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(0,0,0,.30),transparent 45%,rgba(0,0,0,.10));opacity:.7}
+#lfr-root .lfr-flip-back{transform:rotateY(180deg)}
+#lfr-root .lfr-flip-forward{left:50%;transform-origin:left center;transform:rotateY(0)}
+#lfr-root .lfr-flip-forward.lfr-flip-go{transform:rotateY(-180deg)}
+#lfr-root .lfr-flip-forward~.lfr-flip-stationary{left:0}
+#lfr-root .lfr-flip-backward{left:0;transform-origin:right center;transform:rotateY(0)}
+#lfr-root .lfr-flip-backward.lfr-flip-go{transform:rotateY(180deg)}
+#lfr-root .lfr-flip-stationary:has(+ .lfr-flip-forward){left:0}
+#lfr-root .lfr-flip-stationary:has(+ .lfr-flip-backward){right:0}
+#lfr-root.lfr-flipping .lfr-pages>.lfr-page{visibility:hidden}
+@media(orientation:portrait){#lfr-root .lfr-flip-layer{display:none}}
+@media(prefers-reduced-motion:reduce){#lfr-root .lfr-flip-sheet{transition:none}}

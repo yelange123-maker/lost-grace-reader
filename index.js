@@ -5,7 +5,7 @@
   if (window.__littleFishReaderLoaded) return;
   window.__littleFishReaderLoaded = true;
   const $ = (selector, root = document) => root.querySelector(selector);
-  const state = { root: null, raw: '', pages: [], spread: 0, font: 20, timer: 0, resize: null, observer: null, lastTouch: null, swiped: 0, tools: false, sourceMessage: null, richSource: null, align: true, excludedTags: ['thinking','think','visible-analysis','status_panel','status_collect','status_sex','Jiang_StatusBar','Shan_StatusBar','baisui_status','details'] };
+  const state = { root: null, raw: '', pages: [], spread: 0, font: 20, timer: 0, resize: null, observer: null, lastTouch: null, swiped: 0, tools: false, sourceMessage: null, richSource: null, turning: false, flipLayer: null, flipTimer: null, align: true, excludedTags: ['thinking','think','visible-analysis','status_panel','status_collect','status_sex','Jiang_StatusBar','Shan_StatusBar','baisui_status','details'] };
   const cssFont = () => state.root?.style.setProperty('--lfr-font', state.font + 'px');
   // Read the *rendered* message, respecting the original page's visibility rules.
   // This is intentionally text-first: rich HTML pagination remains a later milestone.
@@ -395,25 +395,60 @@
     $('.lfr-notice',state.root).textContent='';
   }
   function schedule() {
+    clearFlip();
     if(state.timer) cancelAnimationFrame(state.timer);
     state.timer=requestAnimationFrame(()=>{state.timer=0;try{paginate();}catch(err){console.error('[Little Fish Reader]',err);if(state.root)$('.lfr-notice',state.root).textContent='排版失败：'+err.message;}});
   }
+  // 3D flip is a presentation-only layer: never repaginate or mutate source DOM.
+  // Forward: old right page rotates right-to-left, with next left on its back.
+  // Backward: old left page rotates left-to-right, with previous right on its back.
+  function clearFlip() {
+    if (state.flipTimer) { clearTimeout(state.flipTimer); state.flipTimer = null; }
+    state.flipLayer?.remove(); state.flipLayer = null;
+    state.turning = false;
+    state.root?.classList.remove('lfr-flipping');
+  }
   function turn(direction) {
+    if (state.turning) return;
     const next=state.spread+direction;
     if(next<0||next>=Math.ceil(state.pages.length/2))return;
+    const pages=$('.lfr-pages',state.root);
+    const left=$('[data-page="left"]',pages), right=$('[data-page="right"]',pages);
+    // Single-column layout and reduced-motion preferences retain instant turns.
+    if (getComputedStyle(right).display === 'none' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      state.spread=next;render();return;
+    }
+    const oldLeft=left.cloneNode(true),oldRight=right.cloneNode(true);
     state.spread=next;render();
+    const newLeft=left.cloneNode(true),newRight=right.cloneNode(true);
+    const layer=document.createElement('div');layer.className='lfr-flip-layer';
+    const stationary=document.createElement('div');stationary.className='lfr-flip-stationary';
+    const sheet=document.createElement('div');sheet.className='lfr-flip-sheet '+(direction>0?'lfr-flip-forward':'lfr-flip-backward');
+    const front=document.createElement('div');front.className='lfr-flip-face lfr-flip-front';
+    const back=document.createElement('div');back.className='lfr-flip-face lfr-flip-back';
+    const cloneInto=(target,source)=>{target.classList.add('lfr-page');if(source.classList.contains('lfr-rich-page'))target.classList.add('lfr-rich-page');target.replaceChildren(...Array.from(source.childNodes).map(n=>n.cloneNode(true)));};
+    cloneInto(stationary,direction>0?oldLeft:oldRight);
+    cloneInto(front,direction>0?oldRight:oldLeft);
+    cloneInto(back,direction>0?newLeft:newRight);
+    sheet.append(front,back);layer.append(stationary,sheet);pages.append(layer);
+    state.flipLayer=layer;state.turning=true;state.root.classList.add('lfr-flipping');
+    // Two frames ensure the browser paints the initial sheet before transition.
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{if(state.flipLayer===layer)sheet.classList.add('lfr-flip-go');}));
+    const finish=()=>{if(state.flipLayer===layer)clearFlip();};
+    sheet.addEventListener('transitionend',e=>{if(e.target===sheet&&e.propertyName==='transform')finish();},{once:true});
+    state.flipTimer=setTimeout(finish,850);
   }
   function openReader(mes) {
     const text=getMessageText(mes);
     if(!text)return;
     if(!state.root)buildOverlay();
-    state.sourceMessage=mes;state.raw=text;state.richSource=richSnapshot(mes);state.spread=0;
+    clearFlip();state.sourceMessage=mes;state.raw=text;state.richSource=richSnapshot(mes);state.spread=0;
     inheritAppearance(mes);
     state.root.hidden=false;state.root.classList.remove('lfr-show-tools');
     $('.lfr-settings', state.root).hidden = true;
     alignBook(); schedule();
   }
-  function closeReader() {if(state.root){state.root.hidden=true;state.root.classList.remove('lfr-show-tools');}state.sourceMessage=null;state.richSource=null;}
+  function closeReader() {clearFlip();if(state.root){state.root.hidden=true;state.root.classList.remove('lfr-show-tools');}state.sourceMessage=null;state.richSource=null;}
   window.addEventListener('resize', () => { if (state.root && !state.root.hidden) { alignBook(); schedule(); } });
   document.addEventListener('keydown',e=>{
     if(!state.root||state.root.hidden)return;
