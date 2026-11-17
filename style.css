@@ -256,4 +256,4 @@
 /* v0.3.27: temporary folios are div children of .lfr-page. The generic rich-text
    reset (#lfr-root .lfr-page :is(...,div,...)) overrode earlier 6px rules.
    Match with higher specificity, without changing original folios or layout. */
-#lfr-root .lfr-page > .lfr-flip-number {font:6px/1 Georgia,serif;bottom:12px}
+#lfr-root .lfr-page > .lfr-flip-number {font:13px/1 Georgia,serif;bottom:12px}
