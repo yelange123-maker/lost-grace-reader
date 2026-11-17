@@ -280,6 +280,9 @@
   box-shadow:0 6px 20px rgba(0,0,0,.05),inset 0 1px 0 rgba(255,255,255,.5);
 }
 
+/* v0.3.36: Tighten only the incoming penguin spacing by 8px.
+   This margin participates in layout and pagination measurement; the atomic
+   penguin grouping and outgoing 16px gap remain unchanged. */
 /* v0.3.35: The generic adjacent-block 1em margin caused a second incoming
    gap above the penguin. Keep the component as one inline-flex unit, and
    put breathing room after it rather than before it. */
@@ -287,6 +290,11 @@
 #lfr-root .lfr-page.lfr-rich-page :is(p,blockquote):has(.lfr-penguin) {
   margin-top:0;
   margin-bottom:0;
+}
+/* Apply the 8px reduction only when a preceding prose block exists. */
+#lfr-root .lfr-page.lfr-rich-page :is(p,blockquote) + :is(p,blockquote).lfr-penguin-block,
+#lfr-root .lfr-page.lfr-rich-page :is(p,blockquote) + :is(p,blockquote):has(.lfr-penguin) {
+  margin-top:-8px;
 }
 #lfr-root .lfr-page.lfr-rich-page :is(p,blockquote).lfr-penguin-block + :is(p,blockquote),
 #lfr-root .lfr-page.lfr-rich-page :is(p,blockquote):has(.lfr-penguin) + :is(p,blockquote) {
