@@ -66,3 +66,12 @@
 }
 #lfr-root .lfr-settings{top:76px}
 @media(max-width:700px){#lfr-root .lfr-page{padding-top:50px}}
+
+/* v0.3.3: safe rich text and theme-derived typography */
+#lfr-root .lfr-rich,#lfr-root .lfr-page{white-space:pre-wrap}
+#lfr-root .lfr-page :is(p,div,blockquote,h1,h2,h3,h4,h5,h6,ul,ol,li,pre){margin:0; padding:0; border:0; background:none; font-size:inherit; line-height:inherit; letter-spacing:inherit}
+#lfr-root .lfr-page :is(strong,b){font-weight:700}
+#lfr-root .lfr-page :is(em,i){font-style:italic}
+#lfr-root .lfr-page u{text-decoration:underline}
+#lfr-root .lfr-page :is(s,del){text-decoration:line-through}
+#lfr-root .lfr-page blockquote{padding-left:.6em;border-left:2px solid var(--lfr-line)}

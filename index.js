@@ -5,7 +5,7 @@
   if (window.__littleFishReaderLoaded) return;
   window.__littleFishReaderLoaded = true;
   const $ = (selector, root = document) => root.querySelector(selector);
-  const state = { root: null, raw: '', pages: [], spread: 0, font: 20, timer: 0, resize: null, observer: null, lastTouch: null, swiped: 0, tools: false, sourceMessage: null, align: true, excludedTags: ['thinking','think','visible-analysis','status_panel','status_collect','status_sex','Jiang_StatusBar','Shan_StatusBar','baisui_status','details'] };
+  const state = { root: null, raw: '', pages: [], spread: 0, font: 20, timer: 0, resize: null, observer: null, lastTouch: null, swiped: 0, tools: false, sourceMessage: null, richSource: null, align: true, excludedTags: ['thinking','think','visible-analysis','status_panel','status_collect','status_sex','Jiang_StatusBar','Shan_StatusBar','baisui_status','details'] };
   const cssFont = () => state.root?.style.setProperty('--lfr-font', state.font + 'px');
   // Read the *rendered* message, respecting the original page's visibility rules.
   // This is intentionally text-first: rich HTML pagination remains a later milestone.
@@ -71,6 +71,87 @@
     walk(node);
     return chunks.join('').replace(/\u00a0/g, ' ').replace(/\r\n?/g, '\n')
       .replace(/\n[ \t]+/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+  }
+  // Build a safe, styled snapshot from the rendered SillyTavern message.
+  // No raw HTML injection: only allowlisted elements and text nodes are copied.
+  const richTags = new Set(['P','DIV','SPAN','EM','I','STRONG','B','U','S','DEL','BLOCKQUOTE','BR','H1','H2','H3','H4','H5','H6','UL','OL','LI','CODE','PRE','SMALL','SUP','SUB','MARK']);
+  const richBlocks = new Set(['P','DIV','BLOCKQUOTE','H1','H2','H3','H4','H5','H6','UL','OL','LI','PRE']);
+  function richSnapshot(mes) {
+    const source = sourceNode(mes);
+    if (!source) return null;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'lfr-rich';
+    const excluded = 'script,style,template,button,input,textarea,select,svg,canvas,iframe,video,audio,.mes_buttons,.mes_button,.lfr-launch';
+    function copy(node, parent) {
+      if (node.nodeType === Node.TEXT_NODE) { parent.append(document.createTextNode(node.nodeValue || '')); return; }
+      if (node.nodeType !== Node.ELEMENT_NODE) return;
+      const el = node;
+      if (el.matches(excluded) || isInvisible(el) || state.excludedTags.some(t => el.tagName.toLowerCase() === t.toLowerCase())) return;
+      if (el.tagName === 'DETAILS') {
+        if (!el.open) { const summary = el.querySelector(':scope > summary'); if (summary) copy(summary, parent); return; }
+        for (const child of el.childNodes) if (child.nodeType !== Node.ELEMENT_NODE || child.tagName !== 'SUMMARY') copy(child,parent);
+        return;
+      }
+      const tag = richTags.has(el.tagName) ? el.tagName.toLowerCase() : 'span';
+      const out = document.createElement(tag);
+      const cs = getComputedStyle(el);
+      // Only typographic computed styles are copied; no positioning, backgrounds,
+      // transforms, user HTML event handlers, or source CSS selectors can leak in.
+      if (cs.color) out.style.color = cs.color;
+      if (cs.fontStyle !== 'normal') out.style.fontStyle = cs.fontStyle;
+      if (cs.fontWeight !== '400' && cs.fontWeight !== 'normal') out.style.fontWeight = cs.fontWeight;
+      if (cs.textDecorationLine && cs.textDecorationLine !== 'none') out.style.textDecorationLine = cs.textDecorationLine;
+      if (cs.textDecorationColor && cs.textDecorationColor !== 'currentcolor') out.style.textDecorationColor = cs.textDecorationColor;
+      if (cs.fontFamily) out.style.fontFamily = cs.fontFamily;
+      // Retain theme's explicit quote/italic/underline colors as computed by the browser.
+      // The source's typography is the authority; no hard-coded theme color constants.
+      parent.append(out);
+      for (const child of el.childNodes) copy(child,out);
+    }
+    for (const child of source.childNodes) copy(child,wrapper);
+    return wrapper;
+  }
+  function textPositions(root) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const nodes=[];let total=0,n;
+    while ((n=walker.nextNode())) {const length=n.nodeValue.length;if(length){nodes.push({node:n,start:total,end:total+length});total+=length;}}
+    return {nodes,total};
+  }
+  function rangeSlice(source,positions,start,end) {
+    const frag=document.createDocumentFragment();
+    if(end<=start || !positions.nodes.length)return frag;
+    const locate=(offset)=>{
+      for(const item of positions.nodes)if(offset<item.end)return [item.node,offset-item.start];
+      const last=positions.nodes[positions.nodes.length-1];return [last.node,last.node.nodeValue.length];
+    };
+    const [a,ao]=locate(start),[b,bo]=locate(end);
+    const range=document.createRange();range.setStart(a,ao);range.setEnd(b,bo);
+    return range.cloneContents();
+  }
+  function richPaginate() {
+    const left=$('[data-page="left"]',state.root),right=$('[data-page="right"]',state.root);
+    left.replaceChildren();right.replaceChildren();state.pages=[];
+    const source=state.richSource,positions=textPositions(source);
+    let start=0,guard=0;
+    const fitsRange=(el,end)=>{
+      el.replaceChildren(rangeSlice(source,positions,start,end));
+      return el.scrollHeight<=el.clientHeight+1 && el.scrollWidth<=el.clientWidth+1;
+    };
+    while(start<positions.total && guard++<10000){
+      const el=state.pages.length%2?right:left;
+      let lo=start+1,hi=positions.total,best=start;
+      while(lo<=hi){const mid=Math.floor((lo+hi)/2);if(fitsRange(el,mid)){best=mid;lo=mid+1;}else hi=mid-1;}
+      if(best===start)best=start+1;
+      if(best<positions.total){
+        const [a,ao]=(()=>{for(const x of positions.nodes)if(best<x.end)return [x.node,best-x.start];return [null,0];})();
+        if(a && ao>0 && ao<a.nodeValue.length && /[\uDC00-\uDFFF]/.test(a.nodeValue[ao]) && /[\uD800-\uDBFF]/.test(a.nodeValue[ao-1]))best--;
+      }
+      best=Math.max(start+1,best);
+      state.pages.push([start,best]);start=best;
+      el.replaceChildren();
+    }
+    state.spread=Math.min(state.spread,Math.max(0,Math.ceil(state.pages.length/2)-1));
+    render();
   }
   function inheritAppearance(mes) {
     if (!state.root) return;
@@ -142,7 +223,7 @@
         state.align = $('.lfr-align-toggle', panel).checked;
         state.excludedTags = [...new Set($('#lfr-tags', panel).value.split(/[\n,，]+/).map(x => x.trim().replace(/^<|>$/g, '')).filter(x => /^[\w-]+$/.test(x)))].slice(0,80);
         saveSettings(); panel.hidden = true;
-        if (state.sourceMessage) state.raw = getMessageText(state.sourceMessage);
+        if (state.sourceMessage) { state.raw = getMessageText(state.sourceMessage); state.richSource = richSnapshot(state.sourceMessage); }
         alignBook(); state.spread = 0; schedule(); return;
       }
       if (e.target.closest('.lfr-settings')) return;
@@ -188,6 +269,7 @@
   function paginate() {
     if(!state.root || state.root.hidden) return;
     const left=$('[data-page="left"]',state.root),right=$('[data-page="right"]',state.root);
+    if (state.richSource) return richPaginate();
     left.textContent='';right.textContent='';state.pages=[];
     let remaining=state.raw.replace(/\r\n?/g,'\n').trim(),guard=0;
     while(remaining && guard++<10000){
@@ -202,8 +284,12 @@
   }
   function render() {
     if(!state.root)return;
-    $('[data-page="left"]',state.root).textContent=state.pages[state.spread*2]||'';
-    $('[data-page="right"]',state.root).textContent=state.pages[state.spread*2+1]||'';
+    const left=$('[data-page="left"]',state.root),right=$('[data-page="right"]',state.root);
+    if(state.richSource){
+      const positions=textPositions(state.richSource);
+      for(const [el,page] of [[left,state.pages[state.spread*2]],[right,state.pages[state.spread*2+1]]])
+        el.replaceChildren(page?rangeSlice(state.richSource,positions,page[0],page[1]):document.createDocumentFragment());
+    } else {left.textContent=state.pages[state.spread*2]||'';right.textContent=state.pages[state.spread*2+1]||'';}
     $('.lfr-num-left',state.root).textContent=state.pages.length?String(state.spread*2+1):'';
     $('.lfr-num-right',state.root).textContent=state.pages[state.spread*2+1]?String(state.spread*2+2):'';
     $('.lfr-notice',state.root).textContent='';
@@ -221,13 +307,13 @@
     const text=getMessageText(mes);
     if(!text)return;
     if(!state.root)buildOverlay();
-    state.sourceMessage=mes;state.raw=text;state.spread=0;
+    state.sourceMessage=mes;state.raw=text;state.richSource=richSnapshot(mes);state.spread=0;
     inheritAppearance(mes);
     state.root.hidden=false;state.root.classList.remove('lfr-show-tools');
     $('.lfr-settings', state.root).hidden = true;
     alignBook(); schedule();
   }
-  function closeReader() {if(state.root){state.root.hidden=true;state.root.classList.remove('lfr-show-tools');}state.sourceMessage=null;}
+  function closeReader() {if(state.root){state.root.hidden=true;state.root.classList.remove('lfr-show-tools');}state.sourceMessage=null;state.richSource=null;}
   window.addEventListener('resize', () => { if (state.root && !state.root.hidden) { alignBook(); schedule(); } });
   document.addEventListener('keydown',e=>{
     if(!state.root||state.root.hidden)return;
