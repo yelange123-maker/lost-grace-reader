@@ -249,3 +249,6 @@
 #lfr-root:not([data-lfr-debug="opaque"]) .lfr-flip-stationary::before {
   background:transparent;
 }
+
+/* v0.3.26: unify all temporary folios at 6px, overriding historical 13px rules. */
+#lfr-root .lfr-flip-number{font-size:6px;line-height:1}

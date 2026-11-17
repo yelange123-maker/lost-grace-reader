@@ -484,7 +484,7 @@
       sheet.classList.add('lfr-flip-go');
       // Once the turning face passes the spine, its back covers the old
       // stationary page; hide the old live text to avoid translucent ghosting.
-      setTimeout(()=>{if(state.flipLayer===layer)state.root.classList.add('lfr-flip-mid');},250);
+      setTimeout(()=>{if(state.flipLayer===layer)state.root.classList.add('lfr-flip-mid');},375);
       state.flipTimer=setTimeout(finish,540);
     });
   }
