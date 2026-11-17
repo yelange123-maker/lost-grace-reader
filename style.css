@@ -40,8 +40,8 @@
   z-index:-1;
   pointer-events:none;
   background:#17191ce8;
-  -webkit-mask-image:linear-gradient(to right,transparent 0,#000 5px,#000 calc(100% - 10px),transparent 100%),linear-gradient(to bottom,transparent 0,#000 20px,#000 calc(100% - 10px),transparent 100%);
-  mask-image:linear-gradient(to right,transparent 0,#000 5px,#000 calc(100% - 10px),transparent 100%),linear-gradient(to bottom,transparent 0,#000 20px,#000 calc(100% - 10px),transparent 100%);
+  -webkit-mask-image:linear-gradient(to right,transparent 0,#000 10px,#000 calc(100% - 10px),transparent 100%),linear-gradient(to bottom,transparent 0,#000 20px,#000 calc(100% - 10px),transparent 100%);
+  mask-image:linear-gradient(to right,transparent 0,#000 10px,#000 calc(100% - 10px),transparent 100%),linear-gradient(to bottom,transparent 0,#000 20px,#000 calc(100% - 10px),transparent 100%);
   -webkit-mask-composite:source-in;
   mask-composite:intersect;
 }
@@ -227,7 +227,7 @@
 #lfr-root.lfr-flip-forward-active.lfr-flip-mid .lfr-pages > .lfr-num-left,
 #lfr-root.lfr-flip-backward-active.lfr-flip-mid .lfr-pages > .lfr-num-right{visibility:hidden}
 
-/* v0.3.22 DIAGNOSTIC ONLY: never ship these overlays as production styles. */
+/* Optional diagnostic overlay, enabled from reader settings. */
 #lfr-root .lfr-debug-panel{position:fixed;z-index:2147483640;right:10px;bottom:10px;display:flex;flex-direction:column;gap:4px;padding:7px;background:#121419f0;border:1px solid #d9a86e;color:#fff;font:11px/1.25 system-ui;border-radius:7px;max-width:175px;pointer-events:auto}
 #lfr-root .lfr-debug-panel button{font:12px system-ui;padding:6px;border-radius:5px}
 #lfr-root .lfr-debug-note{opacity:.8}
@@ -304,3 +304,9 @@
   margin:0;
   vertical-align:middle;
 }
+
+/* v0.3.37: debug tools are opt-in; labels must never leak into normal reading. */
+#lfr-root .lfr-debug-panel[hidden]{display:none!important}
+#lfr-root:not(.lfr-debug-enabled) .lfr-flip-stationary::after,
+#lfr-root:not(.lfr-debug-enabled) .lfr-flip-face .lfr-debug-label{display:none!important}
+#lfr-root .lfr-debug-toggle{display:block;margin:0 0 12px;padding:7px 12px;border:1px solid var(--lfr-line);border-radius:8px;background:#292b30;color:var(--lfr-ink);font:13px system-ui;cursor:pointer}

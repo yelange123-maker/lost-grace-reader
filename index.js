@@ -448,13 +448,14 @@
   }
   function buildOverlay() {
     const root = document.createElement('div'); root.id = 'lfr-root';
-    root.innerHTML = `<div class="lfr-backdrop"></div><section class="lfr-book" role="dialog" aria-modal="true" aria-label="小鱼阅读器"><div class="lfr-tools"><span class="lfr-title">小鱼阅读器 · 测试版</span><button data-action="smaller" title="缩小字号">A−</button><button data-action="larger" title="放大字号">A+</button><button data-action="close" title="退出阅读模式">退出 ✕</button><button data-action="settings" title="阅读设置">⚙</button></div><div class="lfr-settings" hidden><label><input type="checkbox" class="lfr-align-toggle" checked> 对齐酒馆聊天区域</label><label><input type="checkbox" class="lfr-penguin-toggle"> 显示企鹅弹幕（头像＋气泡）</label><label for="lfr-tags">清洗标签（每行一个标签名，不带尖括号）</label><textarea id="lfr-tags" spellcheck="false"></textarea><div class="lfr-settings-actions"><button data-action="save-settings">保存并重新排版</button><button data-action="cancel-settings">取消</button></div></div><div class="lfr-pages"><article class="lfr-page" data-page="left"></article><article class="lfr-page" data-page="right"></article><span class="lfr-num lfr-num-left"></span><span class="lfr-num lfr-num-right"></span><div class="lfr-notice" aria-live="polite"></div></div></section>`;
+    root.innerHTML = `<div class="lfr-backdrop"></div><section class="lfr-book" role="dialog" aria-modal="true" aria-label="小鱼阅读器"><div class="lfr-tools"><span class="lfr-title">小鱼阅读器 · 测试版</span><button data-action="smaller" title="缩小字号">A−</button><button data-action="larger" title="放大字号">A+</button><button data-action="close" title="退出阅读模式">退出 ✕</button><button data-action="settings" title="阅读设置">⚙</button></div><div class="lfr-settings" hidden><label><input type="checkbox" class="lfr-align-toggle" checked> 对齐酒馆聊天区域</label><label><input type="checkbox" class="lfr-penguin-toggle"> 显示企鹅弹幕（头像＋气泡）</label><button type="button" class="lfr-debug-toggle" data-action="toggle-debug" aria-pressed="false">Debug：关闭</button><label for="lfr-tags">清洗标签（每行一个标签名，不带尖括号）</label><textarea id="lfr-tags" spellcheck="false"></textarea><div class="lfr-settings-actions"><button data-action="save-settings">保存并重新排版</button><button data-action="cancel-settings">取消</button></div></div><div class="lfr-pages"><article class="lfr-page" data-page="left"></article><article class="lfr-page" data-page="right"></article><span class="lfr-num lfr-num-left"></span><span class="lfr-num lfr-num-right"></span><div class="lfr-notice" aria-live="polite"></div></div></section>`;
     document.body.append(root);
     state.root = root;
     cssFont();
     // Diagnostic control: cycles visibility of distinct page sources.
     const debug=document.createElement('div');
     debug.className='lfr-debug-panel';
+    debug.hidden=true;
     debug.innerHTML='<span class="lfr-debug-title">图层诊断 · 仅测试版</span><button type="button" class="lfr-debug-cycle">模式：全部显示</button><span class="lfr-debug-note">点击切换模式，再翻页录屏</span>';
     root.append(debug);
     const modes=[['all','全部显示'],['live','隐藏原始书页'],['stationary','隐藏静止副本'],['sheet','隐藏旋转纸张'],['opaque','不透明隔离']];
@@ -469,6 +470,19 @@
     root.addEventListener('click', e => {
       const action = e.target.closest('[data-action]')?.dataset.action;
       if (action === 'close') return closeReader();
+      if (action === 'toggle-debug') {
+        const enabled = root.classList.toggle('lfr-debug-enabled');
+        debug.hidden = !enabled;
+        if (!enabled) {
+          modeIndex = 0;
+          root.dataset.lfrDebug = 'all';
+          debug.querySelector('.lfr-debug-cycle').textContent = '模式：全部显示';
+        }
+        const toggle = $('.lfr-debug-toggle', root);
+        toggle.textContent = enabled ? 'Debug：开启' : 'Debug：关闭';
+        toggle.setAttribute('aria-pressed', String(enabled));
+        return;
+      }
       if (action === 'settings') {
         const panel = $('.lfr-settings', root);
         panel.hidden = !panel.hidden;
