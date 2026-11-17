@@ -269,6 +269,8 @@
   function paginate() {
     if(!state.root || state.root.hidden) return;
     const left=$('[data-page="left"]',state.root),right=$('[data-page="right"]',state.root);
+    left.classList.toggle('lfr-rich-page', !!state.richSource);
+    right.classList.toggle('lfr-rich-page', !!state.richSource);
     if (state.richSource) return richPaginate();
     left.textContent='';right.textContent='';state.pages=[];
     let remaining=state.raw.replace(/\r\n?/g,'\n').trim(),guard=0;

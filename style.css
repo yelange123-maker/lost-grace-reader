@@ -75,3 +75,7 @@
 #lfr-root .lfr-page u{text-decoration:underline}
 #lfr-root .lfr-page :is(s,del){text-decoration:line-through}
 #lfr-root .lfr-page blockquote{padding-left:.6em;border-left:2px solid var(--lfr-line)}
+
+/* v0.3.4: collapse source HTML formatting whitespace between rich blocks. */
+#lfr-root .lfr-page.lfr-rich-page{white-space:normal}
+#lfr-root .lfr-page.lfr-rich-page pre{white-space:pre-wrap}
