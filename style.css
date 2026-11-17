@@ -252,3 +252,8 @@
 
 /* v0.3.26: unify all temporary folios at 6px, overriding historical 13px rules. */
 #lfr-root .lfr-flip-number{font-size:6px;line-height:1}
+
+/* v0.3.27: temporary folios are div children of .lfr-page. The generic rich-text
+   reset (#lfr-root .lfr-page :is(...,div,...)) overrode earlier 6px rules.
+   Match with higher specificity, without changing original folios or layout. */
+#lfr-root .lfr-page > .lfr-flip-number {font:6px/1 Georgia,serif;bottom:12px}
