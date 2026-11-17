@@ -216,3 +216,28 @@
 #lfr-root .lfr-flip-outgoing.lfr-outgoing-right{right:0}
 #lfr-root .lfr-flip-outgoing.lfr-outgoing-fade{opacity:0}
 #lfr-root .lfr-flip-outgoing .lfr-flip-number{bottom:12px}
+
+/* v0.3.20: single-owner folios, no outgoing overlay or post-turn dissolve. */
+#lfr-root.lfr-flip-forward-active .lfr-pages > [data-page="right"],
+#lfr-root.lfr-flip-backward-active .lfr-pages > [data-page="left"]{visibility:hidden}
+#lfr-root.lfr-flip-forward-active .lfr-pages > .lfr-num-right,
+#lfr-root.lfr-flip-backward-active .lfr-pages > .lfr-num-left{visibility:hidden}
+#lfr-root.lfr-flip-forward-active.lfr-flip-mid .lfr-pages > [data-page="left"],
+#lfr-root.lfr-flip-backward-active.lfr-flip-mid .lfr-pages > [data-page="right"]{visibility:hidden}
+#lfr-root.lfr-flip-forward-active.lfr-flip-mid .lfr-pages > .lfr-num-left,
+#lfr-root.lfr-flip-backward-active.lfr-flip-mid .lfr-pages > .lfr-num-right{visibility:hidden}
+
+/* v0.3.22 DIAGNOSTIC ONLY: never ship these overlays as production styles. */
+#lfr-root .lfr-debug-panel{position:fixed;z-index:2147483640;right:10px;bottom:10px;display:flex;flex-direction:column;gap:4px;padding:7px;background:#121419f0;border:1px solid #d9a86e;color:#fff;font:11px/1.25 system-ui;border-radius:7px;max-width:175px;pointer-events:auto}
+#lfr-root .lfr-debug-panel button{font:12px system-ui;padding:6px;border-radius:5px}
+#lfr-root .lfr-debug-note{opacity:.8}
+#lfr-root .lfr-flip-stationary::after{content:'静止副本';position:absolute;top:2px;left:4px;color:#fff;background:#9d4d22;padding:2px 5px;font:10px system-ui;z-index:99;pointer-events:none}
+#lfr-root .lfr-flip-face .lfr-debug-label{position:absolute;top:2px;left:4px}
+#lfr-root[data-lfr-debug="live"] .lfr-pages > .lfr-page,
+#lfr-root[data-lfr-debug="live"] .lfr-pages > .lfr-num{visibility:hidden!important}
+#lfr-root[data-lfr-debug="stationary"] .lfr-flip-stationary{visibility:hidden!important}
+#lfr-root[data-lfr-debug="sheet"] .lfr-flip-sheet{visibility:hidden!important}
+#lfr-root[data-lfr-debug="opaque"] .lfr-flip-stationary,
+#lfr-root[data-lfr-debug="opaque"] .lfr-flip-face{background:#17191c!important}
+#lfr-root[data-lfr-debug="opaque"] .lfr-flip-stationary::before,
+#lfr-root[data-lfr-debug="opaque"] .lfr-flip-face::before{display:none!important}

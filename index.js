@@ -302,6 +302,20 @@
     document.body.append(root);
     state.root = root;
     cssFont();
+    // Diagnostic control: cycles visibility of distinct page sources.
+    const debug=document.createElement('div');
+    debug.className='lfr-debug-panel';
+    debug.innerHTML='<span class="lfr-debug-title">图层诊断 · 仅测试版</span><button type="button" class="lfr-debug-cycle">模式：全部显示</button><span class="lfr-debug-note">点击切换模式，再翻页录屏</span>';
+    root.append(debug);
+    const modes=[['all','全部显示'],['live','隐藏原始书页'],['stationary','隐藏静止副本'],['sheet','隐藏旋转纸张'],['opaque','不透明隔离']];
+    let modeIndex=0;
+    debug.querySelector('.lfr-debug-cycle').addEventListener('click',e=>{
+      e.stopPropagation();
+      modeIndex=(modeIndex+1)%modes.length;
+      root.dataset.lfrDebug=modes[modeIndex][0];
+      e.currentTarget.textContent='模式：'+modes[modeIndex][1];
+    });
+    root.dataset.lfrDebug='all';
     root.addEventListener('click', e => {
       const action = e.target.closest('[data-action]')?.dataset.action;
       if (action === 'close') return closeReader();
@@ -406,7 +420,7 @@
     if (state.flipTimer) { clearTimeout(state.flipTimer); state.flipTimer = null; }
     state.flipLayer?.remove(); state.flipLayer = null;
     state.turning = false;
-    state.root?.classList.remove('lfr-flipping');
+    state.root?.classList.remove('lfr-flipping','lfr-flip-forward-active','lfr-flip-backward-active','lfr-flip-mid');
   }
   function turn(direction) {
     if (state.turning) return;
@@ -446,21 +460,20 @@
     addNumber(front,numberFor(oldSpread,direction>0?'right':'left'));
     addNumber(back,numberFor(next,direction>0?'left':'right'));
     sheet.append(front,back);layer.append(stationary,sheet);pages.append(layer);
-    state.flipLayer=layer;state.turning=true;state.root.classList.add('lfr-flipping');
+    // Temporary labels reveal which DOM surface contributes to a ghost.
+    layer.setAttribute('data-debug-layer','临时图层');
+    stationary.setAttribute('data-debug-layer','静止副本');
+    front.setAttribute('data-debug-layer','旋转正面');
+    back.setAttribute('data-debug-layer','旋转背面');
+    state.flipLayer=layer;state.turning=true;state.root.classList.add('lfr-flipping',direction>0?'lfr-flip-forward-active':'lfr-flip-backward-active');
     void sheet.offsetWidth;
     const finish=()=>{
       if(state.flipLayer!==layer)return;
-      // Replace the live spread only when the physical page has landed.
-      state.spread=next;render();
-      // Dissolve the old stationary page rather than making it vanish abruptly.
-      const outgoing=document.createElement('div');
-      outgoing.className='lfr-flip-outgoing '+(direction>0?'lfr-outgoing-left':'lfr-outgoing-right');
-      cloneInto(outgoing,direction>0?oldLeft:oldRight);
-      addNumber(outgoing,numberFor(oldSpread,direction>0?'left':'right'));
-      pages.append(outgoing);
+      // Atomic handoff: the temporary faces and the live spread must never
+      // coexist for a fading frame (which caused ghost text and double folios).
+      state.spread=next;
+      render();
       clearFlip();
-      requestAnimationFrame(()=>outgoing.classList.add('lfr-outgoing-fade'));
-      setTimeout(()=>outgoing.remove(),150);
     };
     sheet.addEventListener('transitionend',e=>{
       if(e.target===sheet&&e.propertyName==='transform')finish();
@@ -469,6 +482,9 @@
     requestAnimationFrame(()=>{
       if(state.flipLayer!==layer)return;
       sheet.classList.add('lfr-flip-go');
+      // Once the turning face passes the spine, its back covers the old
+      // stationary page; hide the old live text to avoid translucent ghosting.
+      setTimeout(()=>{if(state.flipLayer===layer)state.root.classList.add('lfr-flip-mid');},320);
       state.flipTimer=setTimeout(finish,680);
     });
   }
