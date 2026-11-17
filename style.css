@@ -79,3 +79,8 @@
 /* v0.3.4: collapse source HTML formatting whitespace between rich blocks. */
 #lfr-root .lfr-page.lfr-rich-page{white-space:normal}
 #lfr-root .lfr-page.lfr-rich-page pre{white-space:pre-wrap}
+
+/* v0.3.5: restore a single line of breathing room between real HTML blocks.
+   Keep whitespace collapsed (v0.3.4), so source formatting newlines don't double it.
+   The pagination measurement uses these same page elements and therefore sees the gap. */
+#lfr-root .lfr-page.lfr-rich-page :is(p,blockquote,h1,h2,h3,h4,h5,h6,ul,ol,pre) + :is(p,blockquote,h1,h2,h3,h4,h5,h6,ul,ol,pre){margin-top:1em}
