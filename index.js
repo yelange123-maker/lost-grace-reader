@@ -5,7 +5,7 @@
   if (window.__littleFishReaderLoaded) return;
   window.__littleFishReaderLoaded = true;
   const $ = (selector, root = document) => root.querySelector(selector);
-  const state = { root: null, raw: '', pages: [], spread: 0, font: 20, timer: 0, resize: null, observer: null, lastTouch: null, swiped: 0, tools: false, sourceMessage: null, richSource: null, turning: false, flipLayer: null, flipTimer: null, align: true, showPenguin: false, excludedTags: ['thinking','think','visible-analysis','status_panel','status_collect','status_sex','Jiang_StatusBar','Shan_StatusBar','baisui_status','details'] };
+  const state = { root: null, raw: '', pages: [], spread: 0, font: 20, timer: 0, resize: null, observer: null, lastTouch: null, swiped: 0, tools: false, sourceMessage: null, richSource: null, turning: false, flipLayer: null, flipTimer: null, streamTimer: null, streamBusy: false, streamText: '', streamFrozen: [], streamSourceText: '', streamLastCheck: 0, align: true, showPenguin: false, excludedTags: ['thinking','think','visible-analysis','status_panel','status_collect','status_sex','Jiang_StatusBar','Shan_StatusBar','baisui_status','details'] };
   const cssFont = () => state.root?.style.setProperty('--lfr-font', state.font + 'px');
   // Read the *rendered* message, respecting the original page's visibility rules.
   // This is intentionally text-first: rich HTML pagination remains a later milestone.
@@ -364,13 +364,19 @@
   }
   function richPaginate() {
     const left=$('[data-page="left"]',state.root),right=$('[data-page="right"]',state.root);
-    left.replaceChildren();right.replaceChildren();state.pages=[];
+    left.replaceChildren();right.replaceChildren();
     const source=state.richSource,positions=textPositions(source);
+    // Preserve fully completed leading pages when the source only grows.
+    // Always reflow the last two pages: their margins/markup can still change.
+    const prior=state.streamFrozen;
+    const canReuse=prior.length && positions.total>=state.streamSourceText.length &&
+      positions.nodes.map(n=>n.node.nodeValue).join('').startsWith(state.streamSourceText);
+    state.pages=canReuse?prior.map(x=>x.slice()):[];
     const bubbles=[...source.querySelectorAll('.lfr-penguin')].map(el=>{
       const nodes=positions.nodes.filter(n=>el.contains(n.node));
       return nodes.length?{start:nodes[0].start,end:nodes[nodes.length-1].end}:null;
     }).filter(Boolean);
-    let start=0,guard=0;
+    let start=state.pages.length?state.pages[state.pages.length-1][1]:0,guard=0;
     const fitsRange=(el,end)=>{
       el.replaceChildren(rangeSlice(source,positions,start,end));
       return el.scrollHeight<=el.clientHeight+1 && el.scrollWidth<=el.clientWidth+1;
@@ -398,6 +404,8 @@
       state.pages.push([start,best]);start=best;
       el.replaceChildren();
     }
+    state.streamSourceText=positions.nodes.map(n=>n.node.nodeValue).join('');
+    state.streamFrozen=state.pages.slice(0,Math.max(0,state.pages.length-2)).map(x=>x.slice());
     state.spread=Math.min(state.spread,Math.max(0,Math.ceil(state.pages.length/2)-1));
     render();
   }
@@ -502,12 +510,12 @@
         state.excludedTags = [...new Set($('#lfr-tags', panel).value.split(/[\n,，]+/).map(x => x.trim().replace(/^<|>$/g, '')).filter(x => /^[\w-]+$/.test(x)))].slice(0,80);
         saveSettings(); panel.hidden = true;
         if (state.sourceMessage) { state.raw = getMessageText(state.sourceMessage); state.richSource = richSnapshot(state.sourceMessage); }
-        alignBook(); state.spread = 0; schedule(); return;
+        state.streamFrozen=[];state.streamSourceText='';alignBook(); state.spread = 0; schedule(); return;
       }
       if (e.target.closest('.lfr-settings')) return;
       if (action === 'smaller' || action === 'larger') {
         state.font = Math.max(12, Math.min(34, state.font + (action === 'larger' ? 2 : -2)));
-        cssFont(); state.spread = 0; schedule(); return;
+        state.streamFrozen=[];state.streamSourceText='';cssFont(); state.spread = 0; schedule(); return;
       }
       if (e.target.classList.contains('lfr-backdrop')) return closeReader();
       if (e.target.closest('.lfr-tools')) return;
@@ -573,6 +581,29 @@
     $('.lfr-num-left',state.root).textContent=state.pages.length?String(state.spread*2+1):'';
     $('.lfr-num-right',state.root).textContent=state.pages[state.spread*2+1]?String(state.spread*2+2):'';
     $('.lfr-notice',state.root).textContent='';
+  }
+  // Streaming messages are edited in-place by SillyTavern. Poll the source, not
+  // the reader overlay, so reader rendering never triggers recursive updates.
+  // Coalesce changes and never interrupt a page-turn transition.
+  function syncStream() {
+    const mes=state.sourceMessage;
+    if(!mes || !state.root || state.root.hidden || !mes.isConnected || state.turning)return;
+    const raw=getMessageText(mes);
+    if(raw===state.streamText)return;
+    const old=state.streamText;
+    state.streamText=raw;
+    if(!raw)return;
+    // Edits/regenerations invalidate frozen boundaries.
+    if(!raw.startsWith(old)) {state.streamFrozen=[];state.streamSourceText='';}
+    state.raw=raw;state.richSource=richSnapshot(mes);
+    schedule();
+  }
+  function startStream() {
+    stopStream();
+    state.streamTimer=setInterval(syncStream,350);
+  }
+  function stopStream() {
+    if(state.streamTimer){clearInterval(state.streamTimer);state.streamTimer=null;}
   }
   function schedule() {
     clearFlip();
@@ -658,14 +689,15 @@
     const text=getMessageText(mes);
     if(!text)return;
     if(!state.root)buildOverlay();
-    clearFlip();state.sourceMessage=mes;state.raw=text;state.richSource=richSnapshot(mes);state.spread=0;
+    clearFlip();stopStream();state.streamFrozen=[];state.streamSourceText='';
+    state.sourceMessage=mes;state.raw=text;state.streamText=text;state.richSource=richSnapshot(mes);state.spread=0;
     inheritAppearance(mes);
     state.root.hidden=false;state.root.classList.remove('lfr-show-tools');
     $('.lfr-settings', state.root).hidden = true;
-    alignBook(); schedule();
+    alignBook(); schedule();startStream();
   }
-  function closeReader() {clearFlip();if(state.root){state.root.hidden=true;state.root.classList.remove('lfr-show-tools');}state.sourceMessage=null;state.richSource=null;}
-  window.addEventListener('resize', () => { if (state.root && !state.root.hidden) { alignBook(); schedule(); } });
+  function closeReader() {stopStream();clearFlip();if(state.root){state.root.hidden=true;state.root.classList.remove('lfr-show-tools');}state.sourceMessage=null;state.richSource=null;}
+  window.addEventListener('resize', () => { if (state.root && !state.root.hidden) { state.streamFrozen=[];state.streamSourceText='';alignBook(); schedule(); } });
   document.addEventListener('keydown',e=>{
     if(!state.root||state.root.hidden)return;
     if(e.key==='Escape'){e.preventDefault();closeReader();}

@@ -34,3 +34,10 @@ v0.3.32: Remove empty paragraph/inline wrappers left by hidden penguin component
 v0.3.34: Balance penguin paragraph incoming/outgoing spacing at 10px; retain bubble and all flip behavior.
 
 v0.3.35: Add zero-width pagination boundaries around penguin components to keep avatars with bubbles; reduce incoming gap and retain outgoing breathing room.
+
+## v0.3.38 流式阅读 1.0（实验）
+- 手动打开已有正文的 AI 消息；不自动弹出、不自动翻页。
+- 阅读器打开期间每 350ms 检查源消息正文是否变化；仅变化时重建安全富文本快照和分页。
+- 对仅追加的消息尽量复用已完成的前置分页边界，末尾两页始终重新排版；若正文被改写、重生成、字号/设置/窗口尺寸变化则解除冻结。
+- 翻页动画播放期间暂停同步，动画结束后再更新；退出阅读器停止轮询。
+- 当前版本为兼容性验证版：不同酒馆主题/正则的 DOM 更新可能影响稳定分页，需在真实流式回复下测试。尚未实现后台独立分页或可视化双页预热提示。
