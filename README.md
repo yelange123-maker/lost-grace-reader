@@ -18,3 +18,6 @@ SillyTavern 原生扩展。保留 v0.1 的阅读入口、独立双页阅读层�
 
 ## 测试建议
 同一条 AI 回复，分别检查：思维链是否被过滤；正文是否完整；字体、颜色、字号是否接近酒馆；分页、翻页、退出是否正常。若正文缺失，回滚 v0.1。
+
+
+v0.3.23 visual test: temporary flip surfaces no longer paint a second translucent paper tint over the shared book backdrop. Diagnostic panel remains available; opaque isolation mode still overrides the test.
