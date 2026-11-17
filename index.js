@@ -72,8 +72,20 @@
   // Exclude the whole details subtree, including its summary.
   // Keep this separate from editable tag exclusions.
   function skipReaderComponent(el) {
-    return el.tagName === 'DETAILS';
+    if (el.tagName === 'DETAILS') return true;
+    // A specific preset's decorative ending, not narrative prose.
+    // Require both the exact text and the centered paragraph styling.
+    if (el.tagName === 'P' &&
+        el.textContent.replace(/\s+/g, ' ').trim() === '☽ 故事未定 ☾' &&
+        el.style.textAlign === 'center') return true;
+    return false;
   }
+  // Slate markup is the only custom layout allowed into the reader.
+  // Copy only known class names; never carry arbitrary source attributes/styles.
+  const slateClasses = new Set([
+    'elegant-slate-container', 'slate-scene-no', 'slate-title',
+    'slate-meta-block', 'slate-location', 'slate-time-weather', 'slate-atmosphere'
+  ]);
   const richTags = new Set(['P','DIV','SPAN','EM','I','STRONG','B','U','S','DEL','BLOCKQUOTE','BR','H1','H2','H3','H4','H5','H6','UL','OL','LI','CODE','PRE','SMALL','SUP','SUB','MARK']);
   const richBlocks = new Set(['P','DIV','BLOCKQUOTE','H1','H2','H3','H4','H5','H6','UL','OL','LI','PRE']);
   function richSnapshot(mes) {
@@ -89,6 +101,7 @@
       if (el.matches(excluded) || skipReaderComponent(el) || isInvisible(el) || state.excludedTags.some(t => el.tagName.toLowerCase() === t.toLowerCase())) return;
       const tag = richTags.has(el.tagName) ? el.tagName.toLowerCase() : 'span';
       const out = document.createElement(tag);
+      for (const cls of el.classList) if (slateClasses.has(cls)) out.classList.add(cls);
       const cs = getComputedStyle(el);
       // Only typographic computed styles are copied; no positioning, backgrounds,
       // transforms, user HTML event handlers, or source CSS selectors can leak in.

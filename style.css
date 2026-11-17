@@ -84,3 +84,34 @@
    Keep whitespace collapsed (v0.3.4), so source formatting newlines don't double it.
    The pagination measurement uses these same page elements and therefore sees the gap. */
 #lfr-root .lfr-page.lfr-rich-page :is(p,blockquote,h1,h2,h3,h4,h5,h6,ul,ol,pre) + :is(p,blockquote,h1,h2,h3,h4,h5,h6,ul,ol,pre){margin-top:1em}
+
+/* v0.3.7: scoped allowlist for the user's Slate scene heading.
+   Only the copied known classes match; no arbitrary original CSS is injected. */
+#lfr-root .lfr-page.lfr-rich-page .elegant-slate-container {
+  position:relative; width:100%; margin:2.5em 0 1.5em; color:inherit; font-family:inherit;
+}
+#lfr-root .lfr-page.lfr-rich-page .slate-scene-no {
+  font-size:.85em; letter-spacing:.15em; opacity:.6; text-transform:uppercase;
+  display:flex; align-items:center; margin-bottom:.6em;
+}
+#lfr-root .lfr-page.lfr-rich-page .slate-scene-no::before {
+  content:""; display:inline-block; width:28px; height:1px; background:currentColor;
+  margin-right:12px; opacity:.7; flex-shrink:0;
+}
+#lfr-root .lfr-page.lfr-rich-page .slate-title {
+  font-family:"Noto Serif SC","Songti SC","SimSun",serif;
+  font-size:1.8em; font-weight:700; line-height:1.35; margin:0 0 .8em;
+  overflow-wrap:break-word; white-space:pre-wrap; opacity:.95;
+}
+#lfr-root .lfr-page.lfr-rich-page .slate-meta-block {
+  display:flex; flex-direction:column; gap:.3em; border-left:2px solid currentColor;
+  padding-left:12px; margin-left:4px; opacity:.75;
+}
+#lfr-root .lfr-page.lfr-rich-page .slate-location {
+  font-weight:600; font-size:.95em; letter-spacing:.5px;
+}
+#lfr-root .lfr-page.lfr-rich-page .slate-time-weather {font-size:.85em}
+#lfr-root .lfr-page.lfr-rich-page .slate-atmosphere {
+  margin-top:1.2em; font-size:.85em; line-height:1.6; font-style:italic;
+  opacity:.8; padding-left:18px; white-space:pre-wrap;
+}
