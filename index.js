@@ -446,7 +446,7 @@
     requestAnimationFrame(()=>requestAnimationFrame(()=>{if(state.flipLayer===layer)sheet.classList.add('lfr-flip-go');}));
     const finish=()=>{if(state.flipLayer===layer)clearFlip();};
     sheet.addEventListener('transitionend',e=>{if(e.target===sheet&&e.propertyName==='transform')finish();},{once:true});
-    state.flipTimer=setTimeout(finish,560);
+    state.flipTimer=setTimeout(finish,850);
   }
   function openReader(mes) {
     const text=getMessageText(mes);

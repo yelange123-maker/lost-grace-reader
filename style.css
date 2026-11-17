@@ -153,10 +153,3 @@
 #lfr-root .lfr-flip-face::after{-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 20px,#000 calc(100% - 10px),transparent 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 20px,#000 calc(100% - 10px),transparent 100%)}
 #lfr-root .lfr-flip-number{position:absolute;bottom:12px;left:0;width:100%;text-align:center;font:13px Georgia,serif;color:var(--lfr-muted);pointer-events:none;z-index:2}
 #lfr-root .lfr-pages::after{z-index:12}
-
-/* v0.3.14: compact temporary paper by 8px on both vertical edges.
-   Keep the underlying real spread untouched. */
-#lfr-root .lfr-flip-stationary,
-#lfr-root .lfr-flip-sheet{top:8px;bottom:8px;height:auto}
-#lfr-root .lfr-flip-number{font-size:11px;bottom:4px;line-height:1}
-#lfr-root .lfr-flip-sheet{transition-duration:420ms}
