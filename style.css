@@ -197,3 +197,10 @@
 
 /* v0.3.17: requested smaller animated folio; normal folios unchanged. */
 #lfr-root .lfr-flip-number{font-size:6px;line-height:1}
+
+/* v0.3.18: prevent original destination folios from overlapping flip folios. */
+#lfr-root.lfr-flipping .lfr-pages > .lfr-num {visibility:hidden}
+/* Keep 640ms, but avoid visually finishing early due to the old easing. */
+#lfr-root .lfr-flip-sheet {transition-duration:640ms;transition-timing-function:linear}
+/* The apparent giant folio came from overlapping original and temporary folios. */
+#lfr-root .lfr-flip-number {font-size:13px;line-height:1}

@@ -442,7 +442,8 @@
     addNumber(back,numberFor(next,direction>0?'left':'right'));
     sheet.append(front,back);layer.append(stationary,sheet);pages.append(layer);
     state.flipLayer=layer;state.turning=true;state.root.classList.add('lfr-flipping');
-    // Two frames ensure the browser paints the initial sheet before transition.
+    // Commit the initial transform before beginning the animation.
+    void sheet.offsetWidth;
     const finish=()=>{if(state.flipLayer===layer)clearFlip();};
     // Listen before starting the transition; cleanup as soon as the rotating
     // transform finishes. The fallback is timed from the *actual* start frame,
@@ -451,12 +452,12 @@
       if(e.target===sheet&&e.propertyName==='transform')finish();
     });
     sheet.addEventListener('transitioncancel',finish,{once:true});
-    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
       if(state.flipLayer!==layer)return;
       sheet.classList.add('lfr-flip-go');
-      // 640ms animation, 16ms scheduling tolerance, no post-turn hold.
-      state.flipTimer=setTimeout(finish,656);
-    }));
+      // Transitionend normally clears the layer; this is only a fallback.
+      state.flipTimer=setTimeout(finish,680);
+    });
   }
   function openReader(mes) {
     const text=getMessageText(mes);
