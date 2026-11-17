@@ -310,3 +310,8 @@
 #lfr-root:not(.lfr-debug-enabled) .lfr-flip-stationary::after,
 #lfr-root:not(.lfr-debug-enabled) .lfr-flip-face .lfr-debug-label{display:none!important}
 #lfr-root .lfr-debug-toggle{display:block;margin:0 0 12px;padding:7px 12px;border:1px solid var(--lfr-line);border-radius:8px;background:#292b30;color:var(--lfr-ink);font:13px system-ui;cursor:pointer}
+
+/* v0.3.39: Hide only the opened source reply visually, without removing it
+   from layout or DOM. Opacity on the .mes ancestor keeps the child computed
+   styles visible to the streaming parser and preserves the chat backdrop. */
+#chat .mes.lfr-source-concealed { opacity: 0 !important; }

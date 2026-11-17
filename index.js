@@ -685,18 +685,24 @@
       state.flipTimer=setTimeout(finish,540);
     });
   }
+  // Conceal only the source message visually. Keep its DOM and computed child
+  // styles intact so streaming snapshots and rich-text parsing still work.
+  function restoreSourceMessage() {
+    if (state.sourceMessage) state.sourceMessage.classList.remove('lfr-source-concealed');
+  }
   function openReader(mes) {
     const text=getMessageText(mes);
     if(!text)return;
     if(!state.root)buildOverlay();
-    clearFlip();stopStream();state.streamFrozen=[];state.streamSourceText='';
+    clearFlip();stopStream();restoreSourceMessage();state.streamFrozen=[];state.streamSourceText='';
     state.sourceMessage=mes;state.raw=text;state.streamText=text;state.richSource=richSnapshot(mes);state.spread=0;
     inheritAppearance(mes);
     state.root.hidden=false;state.root.classList.remove('lfr-show-tools');
+    mes.classList.add('lfr-source-concealed');
     $('.lfr-settings', state.root).hidden = true;
     alignBook(); schedule();startStream();
   }
-  function closeReader() {stopStream();clearFlip();if(state.root){state.root.hidden=true;state.root.classList.remove('lfr-show-tools');}state.sourceMessage=null;state.richSource=null;}
+  function closeReader() {stopStream();clearFlip();restoreSourceMessage();if(state.root){state.root.hidden=true;state.root.classList.remove('lfr-show-tools');}state.sourceMessage=null;state.richSource=null;}
   window.addEventListener('resize', () => { if (state.root && !state.root.hidden) { state.streamFrozen=[];state.streamSourceText='';alignBook(); schedule(); } });
   document.addEventListener('keydown',e=>{
     if(!state.root||state.root.hidden)return;
