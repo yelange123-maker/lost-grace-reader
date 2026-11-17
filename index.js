@@ -433,6 +433,13 @@
     cloneInto(stationary,direction>0?oldLeft:oldRight);
     cloneInto(front,direction>0?oldRight:oldLeft);
     cloneInto(back,direction>0?newLeft:newRight);
+    // Page numbers normally sit outside the text pages; clone them for flip faces.
+    const numberFor=(spread,side)=>{const index=spread*2+(side==='right'?1:0);return state.pages[index]?String(index+1):'';};
+    const addNumber=(el,value)=>{if(!value)return;const num=document.createElement('div');num.className='lfr-flip-number';num.textContent=value;el.append(num);};
+    const oldSpread=next-direction;
+    addNumber(stationary,numberFor(oldSpread,direction>0?'left':'right'));
+    addNumber(front,numberFor(oldSpread,direction>0?'right':'left'));
+    addNumber(back,numberFor(next,direction>0?'left':'right'));
     sheet.append(front,back);layer.append(stationary,sheet);pages.append(layer);
     state.flipLayer=layer;state.turning=true;state.root.classList.add('lfr-flipping');
     // Two frames ensure the browser paints the initial sheet before transition.

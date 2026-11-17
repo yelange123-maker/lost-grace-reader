@@ -145,3 +145,11 @@
 #lfr-root .lfr-flip-stationary:has(+ .lfr-flip-backward){right:0}
 @media(orientation:portrait){#lfr-root .lfr-flip-layer{display:none}}
 @media(prefers-reduced-motion:reduce){#lfr-root .lfr-flip-sheet{transition:none}}
+
+/* v0.3.13: translucent flip faces, matched to the book surface. */
+#lfr-root .lfr-flip-stationary,#lfr-root .lfr-flip-face{background:transparent;border:0;margin:0;box-shadow:none;isolation:isolate}
+#lfr-root .lfr-flip-stationary::before,#lfr-root .lfr-flip-face::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:#17191ce8;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 20px,#000 calc(100% - 10px),transparent 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 20px,#000 calc(100% - 10px),transparent 100%)}
+#lfr-root .lfr-flip-stationary,#lfr-root .lfr-flip-sheet{height:100%;bottom:auto}
+#lfr-root .lfr-flip-face::after{-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 20px,#000 calc(100% - 10px),transparent 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 20px,#000 calc(100% - 10px),transparent 100%)}
+#lfr-root .lfr-flip-number{position:absolute;bottom:12px;left:0;width:100%;text-align:center;font:13px Georgia,serif;color:var(--lfr-muted);pointer-events:none;z-index:2}
+#lfr-root .lfr-pages::after{z-index:12}
