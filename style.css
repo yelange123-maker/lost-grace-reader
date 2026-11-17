@@ -17,3 +17,11 @@
 #lfr-root .lfr-notice{position:absolute;left:50%;bottom:35px;transform:translateX(-50%);font:12px system-ui;color:#f1c88a;pointer-events:none}
 @media(max-width:700px){#lfr-root .lfr-book{top:2%;bottom:3%;left:2%;right:9%}#lfr-root .lfr-page{padding:20px 12px 40px}#lfr-root .lfr-title{font-size:11px;letter-spacing:0}}
 @media(orientation:portrait){#lfr-root .lfr-book{right:2%}#lfr-root .lfr-pages{grid-template-columns:1fr}#lfr-root .lfr-page[data-page="right"],#lfr-root .lfr-num-right,#lfr-root .lfr-pages:after{display:none}}
+
+/* v0.3: optional viewport alignment and unobtrusive settings */
+#lfr-root .lfr-book.lfr-aligned{right:auto!important;bottom:auto!important;max-width:none!important;max-height:none!important}
+#lfr-root .lfr-settings{position:absolute;z-index:7;top:54px;right:12px;width:min(410px,calc(100% - 24px));max-height:calc(100% - 70px);overflow:auto;background:#1b1c20f5;border:1px solid var(--lfr-line);border-radius:12px;padding:16px;box-shadow:0 8px 30px #0009;font:14px/1.6 system-ui;color:var(--lfr-ink)}
+#lfr-root .lfr-settings[hidden]{display:none!important}
+#lfr-root .lfr-settings label{display:block;margin-bottom:12px}
+#lfr-root .lfr-settings textarea{display:block;width:100%;min-height:130px;resize:vertical;margin:8px 0 12px;background:#101114;color:var(--lfr-ink);border:1px solid var(--lfr-line);border-radius:8px;padding:10px;font:13px/1.5 monospace}
+#lfr-root .lfr-settings-actions{display:flex;gap:8px;flex-wrap:wrap}
