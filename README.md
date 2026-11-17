@@ -23,3 +23,5 @@ SillyTavern 原生扩展。保留 v0.1 的阅读入口、独立双页阅读层�
 v0.3.23 visual test: temporary flip surfaces no longer paint a second translucent paper tint over the shared book backdrop. Diagnostic panel remains available; opaque isolation mode still overrides the test.
 
 v0.3.24 visual test: remove only the stationary duplicate paper tint; rotating sheet retains its translucent background. Diagnostic controls retained.
+
+v0.3.25 timing test: 500ms linear page turn; midpoint 250ms; fallback completion 540ms. All v0.3.24 visual and diagnostic behavior retained.
