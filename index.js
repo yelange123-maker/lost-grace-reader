@@ -457,9 +457,10 @@
         if(avatar)avatar.classList.add('lfr-chat-avatar');
       }
       const content=row?.querySelector(':scope > div');
+      let body=null;
       if(content){
         content.classList.add('lfr-chat-content');
-        const body=[...content.children].find(child=>child.tagName==='DIV');
+        body=[...content.children].find(child=>child.tagName==='DIV');
         if(body)body.classList.add('lfr-chat-body');
       }
       // Source bubbles may have a fixed computed height from wrapping at the
