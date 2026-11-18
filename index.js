@@ -430,6 +430,13 @@
       parent.append(out);for(const child of node.childNodes)append(child,out);
     }
     append(el,root);
+    // v0.3.57: system notices are text-only. Preserve the actual rendered
+    // label directly rather than inheriting nested source markup/visibility.
+    if(kind==='system'){
+      const sourceLabel=el.querySelector(':scope > div[style*="text-align: center"] > span');
+      const targetLabel=root.querySelector('span');
+      if(sourceLabel && targetLabel) targetLabel.textContent=sourceLabel.textContent;
+    }
     // v0.3.52: distinguish outgoing phone rows by the source's avatar
     // placement and right-aligned flex layout, not bubble color alone.
     if(['phone','sticker','redpacket'].includes(kind)) {
@@ -454,6 +461,20 @@
         content.classList.add('lfr-chat-content');
         const body=[...content.children].find(child=>child.tagName==='DIV');
         if(body)body.classList.add('lfr-chat-body');
+      }
+      // Source bubbles may have a fixed computed height from wrapping at the
+      // Tavern viewport. The reader must measure height at its own font scale.
+      if(body){
+        for(const child of body.children){
+          if(child.tagName==='DIV' || child.tagName==='LABEL'){
+            child.style.removeProperty('height');
+            child.style.removeProperty('min-height');
+            for(const inner of child.querySelectorAll('p,div,span')){
+              inner.style.removeProperty('height');
+              inner.style.removeProperty('min-height');
+            }
+          }
+        }
       }
       if(content){content.style.removeProperty('width');content.style.removeProperty('max-width');content.style.removeProperty('overflow');}
       const name=content?.querySelector(':scope > p:first-child');

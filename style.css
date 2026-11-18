@@ -454,3 +454,12 @@
 #lfr-root .lfr-page.lfr-rich-page .lfr-story-outgoing .lfr-chat-row > .lfr-chat-content{display:flex!important;flex-direction:column!important;align-items:flex-end!important;justify-content:flex-start!important}
 #lfr-root .lfr-page.lfr-rich-page .lfr-story-outgoing .lfr-chat-row > .lfr-chat-content > p:first-child{display:block!important;align-self:flex-end!important;text-align:right!important;margin:0 0 3px!important}
 #lfr-root .lfr-page.lfr-rich-page .lfr-story-outgoing .lfr-chat-row > .lfr-chat-content > .lfr-chat-body{display:flex!important;flex-direction:row-reverse!important;align-items:flex-end!important}
+
+/* v0.3.57: reader-sized chat text and intrinsic bubble height. */
+#lfr-root .lfr-page.lfr-rich-page .lfr-chat-body > div,
+#lfr-root .lfr-page.lfr-rich-page .lfr-chat-body > label{height:auto!important;min-height:0!important;font-size:var(--lfr-font)!important;line-height:var(--lfr-leading)!important}
+#lfr-root .lfr-page.lfr-rich-page .lfr-chat-body > div p,
+#lfr-root .lfr-page.lfr-rich-page .lfr-chat-body > label p{height:auto!important;min-height:0!important;font-size:inherit!important;line-height:inherit!important;margin:0!important}
+/* Outgoing time sits before the bubble; give it a little breathing room. */
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-outgoing .lfr-chat-body{column-gap:11px!important}
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-outgoing .lfr-chat-body > p{margin-right:5px!important}
