@@ -362,6 +362,23 @@
       if (node.nodeType === Node.TEXT_NODE) { parent.append(document.createTextNode(node.nodeValue || '')); return; }
       if (node.nodeType !== Node.ELEMENT_NODE) return;
       const el = node;
+      // Treat the sender label and the recognized voice note as one atomic
+      // decorated component. Do not promote unrelated <details> elements.
+      if (el.tagName === 'DIV') {
+        const children=[...el.children];
+        const voiceEl=children.find(child=>child.tagName==='DETAILS' && voiceNoteParts(child));
+        const label=children.find(child=>child!==voiceEl && child.tagName==='DIV');
+        if (voiceEl && label && children.length===2) {
+          const parts=voiceNoteParts(voiceEl);
+          const card=readOnlyVoiceCard(parts);
+          const sender=document.createElement('div');
+          sender.className='lfr-voice-sender';
+          sender.textContent=label.textContent.trim();
+          card.prepend(sender);
+          parent.append(card);
+          return;
+        }
+      }
       const voice=voiceNoteParts(el);
       if (voice) {parent.append(readOnlyVoiceCard(voice));return;}
       if (el.matches(excluded) || skipReaderComponent(el) || isInvisible(el) || state.excludedTags.some(t => el.tagName.toLowerCase() === t.toLowerCase())) return;
