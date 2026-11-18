@@ -432,3 +432,17 @@
 /* The end stamp spans and centers in the available reading column. */
 #lfr-root .lfr-page.lfr-rich-page p.lfr-end-stamp{display:block!important;width:100%!important;max-width:100%!important;text-align:center!important;margin:0.7em 0!important}
 #lfr-root .lfr-page.lfr-rich-page p.lfr-end-stamp > span{display:block!important;width:100%!important;text-align:center!important}
+
+/* v0.3.53: denser chat transcript and stable two-sided message anatomy. */
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-card:is(.lfr-story-phone,.lfr-story-sticker,.lfr-story-redpacket){margin:1px 0 2px!important;padding:0!important}
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-card:is(.lfr-story-phone,.lfr-story-sticker,.lfr-story-redpacket)>div{margin:0!important;padding:0!important;gap:10px!important;align-items:flex-start!important}
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-card:is(.lfr-story-phone,.lfr-story-sticker,.lfr-story-redpacket)>div>div{margin:0!important;padding:0!important;display:flex!important;flex-direction:column!important;align-items:flex-start!important;min-width:0!important;max-width:calc(100% - 42px)!important}
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-card:is(.lfr-story-phone,.lfr-story-sticker,.lfr-story-redpacket)>div>div>p:first-child{margin:0 0 3px!important;line-height:1.25!important;min-width:0!important;max-width:100%!important;white-space:nowrap!important;overflow:visible!important;word-break:normal!important}
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-card:is(.lfr-story-phone,.lfr-story-sticker,.lfr-story-redpacket)>div>div>div{margin:0!important;gap:4px!important;align-items:flex-end!important}
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-outgoing{margin-left:auto!important;margin-right:0!important}
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-outgoing>div{flex-direction:row!important;justify-content:flex-end!important}
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-outgoing>div>div{align-items:flex-end!important}
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-outgoing>div>div>p:first-child{text-align:right!important}
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-outgoing>div>div>div{flex-direction:row-reverse!important}
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-outgoing>div>div>div>p{white-space:nowrap!important;overflow-wrap:normal!important;word-break:normal!important;flex:0 0 auto!important}
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-outgoing>div>div>div>div{flex:0 1 auto!important;min-width:0!important}

@@ -444,6 +444,8 @@
     if(['phone','sticker','redpacket'].includes(kind)) {
       const row=root.firstElementChild?.firstElementChild;
       const content=row?.querySelector(':scope > div');
+      if(row){row.style.removeProperty('width');row.style.removeProperty('max-width');row.style.removeProperty('margin-left');row.style.removeProperty('margin-right');}
+      if(root.classList.contains('lfr-story-outgoing')){root.style.marginLeft='auto';root.style.marginRight='0';}
       if(content){content.style.removeProperty('width');content.style.removeProperty('max-width');content.style.removeProperty('overflow');}
       const name=content?.querySelector(':scope > p:first-child');
       if(name){name.style.removeProperty('width');name.style.removeProperty('max-width');name.style.removeProperty('overflow');name.style.removeProperty('white-space');name.style.removeProperty('text-overflow');}
