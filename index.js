@@ -46,6 +46,40 @@
     book.style.width = Math.round(r.width - 2 * pad) + 'px';
     book.style.height = Math.round(r.height - 2 * pad - topInset) + 'px';
   }
+  // Only the known regex voice-note shape is promoted to a read-only card.
+  // Other <details> (status panels, story choices, etc.) remain excluded.
+  function voiceNoteParts(el) {
+    if (el.tagName !== 'DETAILS') return null;
+    const summary = [...el.children].find(child => child.tagName === 'SUMMARY');
+    if (!summary) return null;
+    const svg = summary.querySelector('svg[viewBox="0 0 24 24"]');
+    const paths = svg ? [...svg.querySelectorAll('path')] : [];
+    const wave = paths.length === 4 &&
+      ['M6 9.5V14.5','M10 7.5V16.5','M14 9.5V14.5','M18 11V13']
+        .every((d,i) => paths[i].getAttribute('d') === d);
+    if (!wave) return null;
+    const duration = summary.textContent.replace(/\s+/g,' ').trim();
+    if (!/^\d{1,4}\s*(?:[″”]|''|"|秒|s)$/i.test(duration)) return null;
+    const body = [...el.children].find(child => child !== summary && child.querySelector('p'));
+    const transcript = body?.textContent?.trim();
+    if (!transcript) return null;
+    return {duration,transcript};
+  }
+  function readOnlyVoiceCard(parts) {
+    const card=document.createElement('div');
+    card.className='lfr-decorated lfr-voice-card';
+    card.dataset.lfrDecorated='1';
+    const head=document.createElement('div');head.className='lfr-voice-head';
+    const glyph=document.createElement('span');glyph.className='lfr-voice-wave';
+    // Built-in visual glyph: no untrusted SVG or source event handlers.
+    for (const h of [9,17,9,5]) {const bar=document.createElement('i');bar.style.height=h+'px';glyph.append(bar);}
+    const time=document.createElement('span');time.className='lfr-voice-time';time.textContent=parts.duration;
+    head.append(glyph,time);
+    const body=document.createElement('div');body.className='lfr-voice-transcript';
+    body.textContent=parts.transcript;
+    card.append(head,body);
+    return card;
+  }
   function getMessageText(mes) {
     const node = sourceNode(mes);
     if (!node) return '';
@@ -56,6 +90,8 @@
       if (n.nodeType === Node.TEXT_NODE) { chunks.push(n.nodeValue || ''); return; }
       if (n.nodeType !== Node.ELEMENT_NODE) return;
       const el = n;
+      const voice=voiceNoteParts(el);
+      if (voice) {chunks.push('\n\n'+voice.duration+' '+voice.transcript+'\n\n');return;}
       if (el.matches(excluded) || skipReaderComponent(el) || isInvisible(el) || state.excludedTags.some(tag => el.tagName.toLowerCase() === tag.toLowerCase())) return;
       if (el.tagName === 'BR') { chunks.push('\n'); return; }
       const block = blocks.has(el.tagName);
@@ -326,6 +362,8 @@
       if (node.nodeType === Node.TEXT_NODE) { parent.append(document.createTextNode(node.nodeValue || '')); return; }
       if (node.nodeType !== Node.ELEMENT_NODE) return;
       const el = node;
+      const voice=voiceNoteParts(el);
+      if (voice) {parent.append(readOnlyVoiceCard(voice));return;}
       if (el.matches(excluded) || skipReaderComponent(el) || isInvisible(el) || state.excludedTags.some(t => el.tagName.toLowerCase() === t.toLowerCase())) return;
       const penguin=penguinKind(el);
       if (penguin) {
