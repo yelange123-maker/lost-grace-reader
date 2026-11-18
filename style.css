@@ -408,3 +408,14 @@
 #lfr-root .lfr-page.lfr-rich-page .lfr-story-system{display:block!important;width:100%!important;max-width:100%!important;margin:10px auto!important;text-align:center!important;font-size:12px!important}
 #lfr-root .lfr-page.lfr-rich-page .lfr-story-system > div{text-align:center!important;display:block!important}
 #lfr-root .lfr-page.lfr-rich-page .lfr-story-system span{display:inline-block!important;background:rgba(240,240,240,.8)!important;color:#000!important;-webkit-text-fill-color:#000!important;font-size:12px!important;padding:3px 8px!important;border-radius:2px!important}
+
+/* v0.3.50: sender names must not inherit the narrow source viewport width. */
+#lfr-root .lfr-page .lfr-story-phone > div > div,
+#lfr-root .lfr-page .lfr-story-sticker > div > div,
+#lfr-root .lfr-page .lfr-story-redpacket > div > div{width:auto!important;min-width:0!important;max-width:calc(100% - 40px)!important;overflow:visible!important;flex:0 1 auto!important}
+#lfr-root .lfr-page .lfr-story-card > div > div > p:first-child{width:auto!important;min-width:max-content!important;max-width:none!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;word-break:normal!important;overflow-wrap:normal!important;font-size:11px!important}
+
+/* v0.3.51: keep inherited mobile chat widths inside the reading column. */
+#lfr-root .lfr-page .lfr-story-card{box-sizing:border-box!important;max-width:100%!important;min-width:0!important}
+#lfr-root .lfr-page .lfr-story-card > div{box-sizing:border-box!important;max-width:100%!important;min-width:0!important}
+#lfr-root .lfr-page .lfr-story-card > div > div{min-width:0!important;max-width:calc(100% - 40px)!important}

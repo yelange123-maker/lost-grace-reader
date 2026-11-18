@@ -430,6 +430,15 @@
       parent.append(out);for(const child of node.childNodes)append(child,out);
     }
     append(el,root);
+    // The source message's text column may have a computed width derived from
+    // its original viewport. Never carry that narrow measurement into a book.
+    if(['phone','sticker','redpacket'].includes(kind)) {
+      const row=root.firstElementChild?.firstElementChild;
+      const content=row?.querySelector(':scope > div');
+      if(content){content.style.removeProperty('width');content.style.removeProperty('max-width');content.style.removeProperty('overflow');}
+      const name=content?.querySelector(':scope > p:first-child');
+      if(name){name.style.removeProperty('width');name.style.removeProperty('max-width');name.style.removeProperty('overflow');name.style.removeProperty('white-space');name.style.removeProperty('text-overflow');}
+    }
     // Every card gets a terminal text anchor, including image-only cards.
     // This keeps the complete visual component reachable by text-range pagination.
     root.append(document.createTextNode('\u200b'));
@@ -562,6 +571,19 @@
     const [a,ao]=locate(start),[b,bo]=locate(end);
     const range=document.createRange();range.setStart(a,ao);range.setEnd(b,bo);
     const fragment = range.cloneContents();
+    // A Range ending exactly at a card's text boundary may retain the card
+    // wrapper in both adjacent fragments. Only the page that owns the token's
+    // first character may render it.
+    const tokenOwners = new Map();
+    for (const item of positions.nodes) {
+      const token = item.node.parentElement?.closest('.lfr-card-token');
+      if (token && !tokenOwners.has(token.dataset.lfrCardId))
+        tokenOwners.set(token.dataset.lfrCardId,item.start);
+    }
+    for (const token of [...fragment.querySelectorAll('.lfr-card-token')]) {
+      const owner = tokenOwners.get(token.dataset.lfrCardId);
+      if (owner === undefined || owner < start || owner >= end) token.remove();
+    }
     // Restore whole visual cards in the cloned page fragment.
     for(const token of fragment.querySelectorAll('.lfr-card-token')){
       const card=state.richCardMap.get(token.dataset.lfrCardId);
@@ -611,7 +633,12 @@
       const crossing=bubbles.find(b=>b.start<end && end<b.end);
       if(crossing && crossing.start>start)end=crossing.start;
       el.replaceChildren(rangeSlice(source,positions,start,end));
-      return el.scrollHeight<=el.clientHeight+1 && el.scrollWidth<=el.clientWidth+1;
+      // Card layouts may carry an intrinsic width from the original phone UI.
+      // A width overflow is not evidence that the *vertical* page is full;
+      // using scrollWidth here made every extra card fail the fit test and
+      // produced one-card pages and phantom empty pages.
+      const hasCard=!!el.querySelector('.lfr-story-card');
+      return el.scrollHeight<=el.clientHeight+1 && (hasCard || el.scrollWidth<=el.clientWidth+1);
     };
     while(start<positions.total && guard++<10000){
       const el=state.pages.length%2?right:left;
@@ -631,7 +658,15 @@
       // character-level fallback; never create a page of clipped fragments.
       const starting=bubbles.find(b=>b.start===start);
       if(starting && best<starting.end && fitsRange(el,starting.end))best=starting.end;
-      if(best===start)best=start+1;
+      // Never consume a card's one-character token as a phantom page.
+      // If its complete rendering fits on an otherwise empty page, it must
+      // be included there; otherwise the range fallback can only advance
+      // one invisible token and manufacture blank pages.
+      if(best===start){
+        const first=bubbles.find(b=>b.start===start && source.querySelector('.lfr-card-token'));
+        if(first && fitsRange(el,first.end))best=first.end;
+        else best=start+1;
+      }
       if(best<positions.total){
         const [a,ao]=(()=>{for(const x of positions.nodes)if(best<x.end)return [x.node,best-x.start];return [null,0];})();
         if(a && ao>0 && ao<a.nodeValue.length && /[\uDC00-\uDFFF]/.test(a.nodeValue[ao]) && /[\uD800-\uDBFF]/.test(a.nodeValue[ao-1]))best--;
