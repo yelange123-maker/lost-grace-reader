@@ -478,6 +478,27 @@
         }
       }
       if(content){content.style.removeProperty('width');content.style.removeProperty('max-width');content.style.removeProperty('overflow');}
+      // v0.3.61: source computed widths are measured in the Tavern viewport.
+      // A narrow measurement can force a book-page bubble into vertical text.
+      // Only remove inherited *measurements* on known phone chat anatomy;
+      // retain backgrounds, radii, bubble tails and the original message text.
+      // Do not change images, stickers, red packets or the absolute tail marker.
+      if(kind==='phone' && body){
+        for(const bubble of [...body.children].filter(child=>child.tagName==='DIV' || child.tagName==='LABEL')){
+          for(const item of [bubble, ...bubble.querySelectorAll('p,span')]){
+            item.style.removeProperty('width');
+            item.style.removeProperty('min-width');
+            item.style.removeProperty('height');
+            item.style.removeProperty('min-height');
+            item.style.removeProperty('overflow');
+            item.style.removeProperty('white-space');
+            item.style.removeProperty('text-overflow');
+          }
+          // The source uses max-width:250px, not a fixed width. Reapply that
+          // limit relative to the new book column instead of a computed width.
+          bubble.style.maxWidth='min(250px, 100%)';
+        }
+      }
       const name=content?.querySelector(':scope > p:first-child');
       if(name){name.style.removeProperty('width');name.style.removeProperty('max-width');name.style.removeProperty('overflow');name.style.removeProperty('white-space');name.style.removeProperty('text-overflow');}
     }
@@ -529,8 +550,8 @@
       const out = document.createElement(tag);
       // v0.3.52: a centered end-of-story stamp is a block-level element.
       // Text-align on its inner span alone does not center its container.
-      if(el.tagName==='P' && el.textContent?.trim()==='✦ 此处收笔 ✦' &&
-         el.querySelector('span[style*="text-align"]'))out.classList.add('lfr-end-stamp');
+      if(el.tagName==='P' && /^✦\s*此处(?:落笔|收笔)\s*✦$/.test(el.textContent?.trim() || ''))
+        out.classList.add('lfr-end-stamp');
       for (const cls of el.classList) if (slateClasses.has(cls)) out.classList.add(cls);
       const cs = getComputedStyle(el);
       // Only typographic computed styles are copied; no positioning, backgrounds,
@@ -582,19 +603,6 @@
       token.className='lfr-card-token';token.dataset.lfrCardId=id;
       token.textContent='\uFFFC';
       state.richCardMap.set(id,card);card.replaceWith(token);
-    }
-    // v0.3.60: Chat-only paragraphs are not prose paragraphs. The generic
-    // adjacent-paragraph 1em rule must not add a full text-line gap between
-    // consecutive phone/sticker/redpacket messages. Keep mixed prose alone.
-    for (const token of wrapper.querySelectorAll('.lfr-card-token')) {
-      const card = state.richCardMap.get(token.dataset.lfrCardId);
-      if (!card || !card.matches('.lfr-story-phone,.lfr-story-sticker,.lfr-story-redpacket')) continue;
-      const block = token.closest('p,blockquote');
-      if (!block || !wrapper.contains(block)) continue;
-      if (block.textContent.replace(/\uFFFC/g, '').trim()) continue;
-      // Other non-text content means this paragraph isn't exclusively cards.
-      if (block.querySelector('img,svg,video,canvas,hr,table,ul,ol,.lfr-penguin')) continue;
-      block.classList.add('lfr-chat-card-block');
     }
     // Reflow non-frozen pages when late-loading sticker/avatar images acquire dimensions.
     for(const img of [...state.richCardMap.values()].flatMap(card=>[...card.querySelectorAll('.lfr-story-img')])){

@@ -464,9 +464,49 @@
 #lfr-root .lfr-page.lfr-rich-page .lfr-story-outgoing .lfr-chat-body{column-gap:11px!important}
 #lfr-root .lfr-page.lfr-rich-page .lfr-story-outgoing .lfr-chat-body > p{margin-right:5px!important}
 
-/* v0.3.60: only consecutive chat-only paragraphs lose the generic 1em prose gap.
-   Preserve normal prose-to-chat and chat-to-prose spacing, and the intrinsic
-   contents of each avatar/name/bubble/time row. */
-#lfr-root .lfr-page.lfr-rich-page :is(p,blockquote).lfr-chat-card-block + :is(p,blockquote).lfr-chat-card-block {
-  margin-top: 0 !important;
+
+/* v0.3.61: responsive phone-bubble geometry; do not import measured Tavern widths. */
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-phone .lfr-chat-body > div {
+  width:auto!important;
+  min-width:0!important;
+  max-width:min(250px, 100%)!important;
+  height:auto!important;
+  flex:0 1 auto!important;
+  overflow:visible!important;
+}
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-phone .lfr-chat-body > div > p {
+  width:auto!important;
+  min-width:0!important;
+  max-width:100%!important;
+  height:auto!important;
+  white-space:normal!important;
+  word-break:normal!important;
+  overflow-wrap:break-word!important;
+}
+/* Both supported end-stamp phrases are tagged during snapshot construction. */
+#lfr-root .lfr-page.lfr-rich-page p.lfr-end-stamp,
+#lfr-root .lfr-page.lfr-rich-page p.lfr-end-stamp > span {
+  display:block!important;
+  box-sizing:border-box!important;
+  width:100%!important;
+  max-width:100%!important;
+  text-align:center!important;
+  margin-left:0!important;
+  margin-right:0!important;
+}
+
+/* v0.3.62: border-only chat tails need a zero-sized CONTENT box.
+   The generic .lfr-story-card * {box-sizing:border-box} can distort
+   a 0x0 border triangle into a rectangular tab. Only affect the
+   absolute-positioned direct child of the phone bubble. */
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-phone .lfr-chat-body > div > div[style*="position: absolute"],
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-phone .lfr-chat-body > div > div[style*="position:absolute"] {
+  box-sizing:content-box!important;
+  display:block!important;
+  width:0!important;
+  height:0!important;
+  min-width:0!important;
+  min-height:0!important;
+  padding:0!important;
+  flex:none!important;
 }
