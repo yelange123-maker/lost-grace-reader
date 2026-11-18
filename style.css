@@ -398,3 +398,13 @@
 #lfr-root .lfr-story-card .lfr-static-image-message{display:block!important;position:relative!important;cursor:default!important}
 #lfr-root .lfr-story-card .lfr-static-image-caption{position:static!important;opacity:1!important;display:block!important;overflow:visible!important;height:auto!important;max-height:none!important;background:rgba(0,0,0,.72)!important;margin-top:4px!important;border-radius:4px!important;padding:6px!important;color:white!important;pointer-events:none!important}
 #lfr-root .lfr-story-card .lfr-static-image-caption p{color:white!important;max-height:none!important}
+
+/* v0.3.49: phone cards are single pagination tokens; compact sender and message. */
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-card{font-size:13px!important;line-height:1.4!important}
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-card p{font-size:inherit;line-height:1.4}
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-card > div > div > p:first-child{font-size:11px!important;line-height:1.25!important;max-width:100%!important;overflow:visible!important;white-space:normal!important;word-break:break-word!important;margin-bottom:4px!important}
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-card > div{align-items:flex-start!important}
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-card .lfr-static-image-caption p{font-size:11px!important}
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-system{display:block!important;width:100%!important;max-width:100%!important;margin:10px auto!important;text-align:center!important;font-size:12px!important}
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-system > div{text-align:center!important;display:block!important}
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-system span{display:inline-block!important;background:rgba(240,240,240,.8)!important;color:#000!important;-webkit-text-fill-color:#000!important;font-size:12px!important;padding:3px 8px!important;border-radius:2px!important}

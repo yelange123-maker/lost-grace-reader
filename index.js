@@ -5,7 +5,7 @@
   if (window.__littleFishReaderLoaded) return;
   window.__littleFishReaderLoaded = true;
   const $ = (selector, root = document) => root.querySelector(selector);
-  const state = { root: null, raw: '', pages: [], spread: 0, font: 20, timer: 0, resize: null, observer: null, lastTouch: null, swiped: 0, tools: false, sourceMessage: null, richSource: null, turning: false, flipLayer: null, flipTimer: null, streamTimer: null, streamBusy: false, streamText: '', streamFrozen: [], streamSourceText: '', streamLastCheck: 0, align: true, showPenguin: false, excludedTags: ['thinking','think','visible-analysis','status_panel','status_collect','status_sex','Jiang_StatusBar','Shan_StatusBar','baisui_status','details'] };
+  const state = { root: null, raw: '', pages: [], spread: 0, font: 20, timer: 0, resize: null, observer: null, lastTouch: null, swiped: 0, tools: false, sourceMessage: null, richSource: null, richCardMap: new Map(), turning: false, flipLayer: null, flipTimer: null, streamTimer: null, streamBusy: false, streamText: '', streamFrozen: [], streamSourceText: '', streamLastCheck: 0, align: true, showPenguin: false, excludedTags: ['thinking','think','visible-analysis','status_panel','status_collect','status_sex','Jiang_StatusBar','Shan_StatusBar','baisui_status','details'] };
   const cssFont = () => state.root?.style.setProperty('--lfr-font', state.font + 'px');
   // Read the *rendered* message, respecting the original page's visibility rules.
   // This is intentionally text-first: rich HTML pagination remains a later milestone.
@@ -362,6 +362,7 @@
     // Narrow signatures based on the actual regex replacements, not all flex layouts.
     const txt=el.textContent||'';
     const style=el.getAttribute('style')||'';
+    if(el.querySelector(':scope > div[style*="text-align: center"] > span') && /max-width:\s*450px/i.test(style))return 'system';
     if(txt.includes('转账消息') && el.querySelector('svg polyline') && el.querySelector('svg line'))return 'transfer';
     if(el.querySelector('div[style*="background-image"]') && el.querySelectorAll('p').length>=2 && /width:\s*280px/i.test(el.innerHTML))return 'location';
     const avatar=el.querySelector(':scope > div > img[src]');
@@ -517,8 +518,18 @@
     // Previously its class was lost because only source.childNodes were copied.
     if ([...source.classList].some(c => slateClasses.has(c))) copy(source,wrapper);
     else for (const child of source.childNodes) copy(child,wrapper);
+    // A visual card is one pagination token, regardless of its text/image count.
+    // Expand the token into the complete card in every measured/rendered range.
+    state.richCardMap=new Map();
+    let cardId=0;
+    for(const card of [...wrapper.querySelectorAll('.lfr-story-card')]){
+      const id=String(++cardId),token=document.createElement('span');
+      token.className='lfr-card-token';token.dataset.lfrCardId=id;
+      token.textContent='\uFFFC';
+      state.richCardMap.set(id,card);card.replaceWith(token);
+    }
     // Reflow non-frozen pages when late-loading sticker/avatar images acquire dimensions.
-    for(const img of wrapper.querySelectorAll('.lfr-story-img')){
+    for(const img of [...state.richCardMap.values()].flatMap(card=>[...card.querySelectorAll('.lfr-story-img')])){
       img.addEventListener('load',()=>{if(state.richSource===wrapper)schedule();},{once:true});
       img.addEventListener('error',()=>{if(state.richSource===wrapper)schedule();},{once:true});
     }
@@ -551,6 +562,11 @@
     const [a,ao]=locate(start),[b,bo]=locate(end);
     const range=document.createRange();range.setStart(a,ao);range.setEnd(b,bo);
     const fragment = range.cloneContents();
+    // Restore whole visual cards in the cloned page fragment.
+    for(const token of fragment.querySelectorAll('.lfr-card-token')){
+      const card=state.richCardMap.get(token.dataset.lfrCardId);
+      if(card)token.replaceWith(card.cloneNode(true));
+    }
     // Range.cloneContents() omits ancestors of its starting text node.
     // If a page starts mid-Slate, restore the missing allowlisted wrapper(s)
     // so the scoped component stylesheet still applies on continuation pages.
@@ -579,12 +595,12 @@
     const source=state.richSource,positions=textPositions(source);
     // Preserve fully completed leading pages when the source only grows.
     // Always reflow the last two pages: their margins/markup can still change.
-    const prior=state.streamFrozen;
+    const prior=state.richCardMap.size ? [] : state.streamFrozen;
     const canReuse=prior.length && positions.total>=state.streamSourceText.length &&
       positions.nodes.map(n=>n.node.nodeValue).join('').startsWith(state.streamSourceText);
     state.pages=canReuse?prior.map(x=>x.slice()):[];
-    const bubbles=[...source.querySelectorAll('.lfr-penguin,.lfr-decorated')].filter(el=>
-      el.classList.contains('lfr-penguin') || !el.parentElement?.closest('.lfr-decorated')).map(el=>{
+    const bubbles=[...source.querySelectorAll('.lfr-penguin,.lfr-decorated,.lfr-card-token')].filter(el=>
+      el.classList.contains('lfr-penguin') || el.classList.contains('lfr-card-token') || !el.parentElement?.closest('.lfr-decorated')).map(el=>{
       const nodes=positions.nodes.filter(n=>el.contains(n.node));
       return nodes.length?{start:nodes[0].start,end:nodes[nodes.length-1].end}:null;
     }).filter(Boolean);
@@ -593,7 +609,7 @@
       // A card is an atomic page item. Partial DOM ranges can discard the
       // avatar, label or image and produce empty pages despite visible content.
       const crossing=bubbles.find(b=>b.start<end && end<b.end);
-      if(crossing && crossing.start>=start)end=crossing.start;
+      if(crossing && crossing.start>start)end=crossing.start;
       el.replaceChildren(rangeSlice(source,positions,start,end));
       return el.scrollHeight<=el.clientHeight+1 && el.scrollWidth<=el.clientWidth+1;
     };
@@ -625,7 +641,7 @@
       el.replaceChildren();
     }
     state.streamSourceText=positions.nodes.map(n=>n.node.nodeValue).join('');
-    state.streamFrozen=state.pages.slice(0,Math.max(0,state.pages.length-2)).map(x=>x.slice());
+    state.streamFrozen=state.richCardMap.size ? [] : state.pages.slice(0,Math.max(0,state.pages.length-2)).map(x=>x.slice());
     state.spread=Math.min(state.spread,Math.max(0,Math.ceil(state.pages.length/2)-1));
     render();
   }
