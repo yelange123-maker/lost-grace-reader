@@ -352,6 +352,75 @@
     // split it as a fallback if it exceeds a full page.
     out.dataset.lfrDecorated='1';
   }
+  // v0.3.46: only in-story cards. Never copy arbitrary event handlers or interactive widgets.
+  function safeImageURL(value) {
+    try { const url=new URL(value,location.href);return url.protocol==='https:'?url.href:null; }
+    catch { return null; }
+  }
+  function inStoryCard(el) {
+    if(el.tagName!=='DIV')return null;
+    // Narrow signatures based on the actual regex replacements, not all flex layouts.
+    const txt=el.textContent||'';
+    const style=el.getAttribute('style')||'';
+    if(txt.includes('转账消息') && el.querySelector('svg polyline') && el.querySelector('svg line'))return 'transfer';
+    if(el.querySelector('div[style*="background-image"]') && el.querySelectorAll('p').length>=2 && /width:\s*280px/i.test(el.innerHTML))return 'location';
+    const avatar=el.querySelector(':scope > div > img[src]');
+    if(avatar && /max-width:\s*(?:450|600)px/i.test(style)) {
+      if(txt.includes('微信红包'))return 'redpacket';
+      if(el.querySelectorAll('img[src]').length>=2)return 'sticker';
+      if(el.querySelector('p'))return 'phone';
+    }
+    return null;
+  }
+  function readOnlyStoryCard(el,kind) {
+    const root=document.createElement('div');root.className='lfr-decorated lfr-story-card lfr-story-'+kind;
+    root.dataset.lfrDecorated='1';
+    const allowed=new Set(['DIV','SPAN','P','IMG','SVG','PATH','POLYLINE','LINE']);
+    function append(node,parent) {
+      if(node.nodeType===Node.TEXT_NODE){parent.append(document.createTextNode(node.nodeValue));return;}
+      if(node.nodeType!==Node.ELEMENT_NODE || !allowed.has(node.tagName))return;
+      if(node.tagName==='IMG'){
+        const url=safeImageURL(node.getAttribute('src'));if(!url)return;
+        const img=document.createElement('img');img.src=url;img.alt=node.alt||'';img.loading='lazy';
+        img.className='lfr-story-img';
+        if(node.getAttribute('style')?.includes('30px'))img.classList.add('lfr-story-avatar');
+        parent.append(img);return;
+      }
+      const tag=node.tagName.toLowerCase(),out=document.createElement(tag);
+      if(tag==='svg'){
+        for(const attr of ['viewBox','width','height','fill','stroke','stroke-width','stroke-linecap','stroke-linejoin']){
+          const val=node.getAttribute(attr);if(val && val.length<80)out.setAttribute(attr,val);
+        }
+      } else if(['path','polyline','line'].includes(tag)){
+        for(const attr of ['d','points','x1','x2','y1','y2']){
+          const val=node.getAttribute(attr);if(val && val.length<150)out.setAttribute(attr,val);
+        }
+      } else {
+        const cs=getComputedStyle(node);
+        for(const prop of decorativeProps){const val=cs[prop];if(safeDecorValue(prop,val))out.style[prop]=val;}
+        for(const prop of ['color','fontWeight','fontFamily','fontSize','width','height','display','flexDirection','alignItems','justifyContent','flexGrow','flexShrink','gap','position','top','left','right','bottom','overflow','whiteSpace','textOverflow','boxSizing']){
+          const val=cs[prop];
+          if(!val || val.length>100)continue;
+          if(prop==='position' && val!=='relative' && val!=='absolute')continue;
+          if(['top','left','right','bottom'].includes(prop) && !/^-?\d+(?:\.\d+)?px$/.test(val))continue;
+          if(['width','height'].includes(prop) && !/^\d+(?:\.\d+)?(?:px|%)$/.test(val))continue;
+          if(prop==='fontSize')continue; // preserve reader-scale font; CSS supplies compact card sizing
+          if(['color','fontWeight','fontFamily','display','flexDirection','alignItems','justifyContent','flexGrow','flexShrink','gap','position','top','left','right','bottom','overflow','whiteSpace','textOverflow','boxSizing','width','height'].includes(prop))out.style[prop]=val;
+        }
+        // Static map preview: only the provided inline data:image/svg+xml background.
+        if(kind==='location' && node.style.backgroundImage.startsWith('url(') && node.style.backgroundImage.includes('data:image/svg+xml')){
+          const bg=node.style.backgroundImage;
+          if(bg.length<4000 && !/javascript:|<script|%3cscript/i.test(bg))out.style.backgroundImage=bg;
+          out.style.backgroundSize='cover';
+        }
+      }
+      parent.append(out);for(const child of node.childNodes)append(child,out);
+    }
+    append(el,root);
+    // A nonempty text position is needed for image-only messages in text-range pagination.
+    if(!root.textContent.trim())root.append(document.createTextNode('\u200b'));
+    return root;
+  }
   function richSnapshot(mes) {
     const source = sourceNode(mes);
     if (!source) return null;
@@ -381,6 +450,7 @@
       }
       const voice=voiceNoteParts(el);
       if (voice) {parent.append(readOnlyVoiceCard(voice));return;}
+      if(state.showPenguin){const kind=inStoryCard(el);if(kind){parent.append(readOnlyStoryCard(el,kind));return;}}
       if (el.matches(excluded) || skipReaderComponent(el) || isInvisible(el) || state.excludedTags.some(t => el.tagName.toLowerCase() === t.toLowerCase())) return;
       const penguin=penguinKind(el);
       if (penguin) {
@@ -434,6 +504,11 @@
     // Previously its class was lost because only source.childNodes were copied.
     if ([...source.classList].some(c => slateClasses.has(c))) copy(source,wrapper);
     else for (const child of source.childNodes) copy(child,wrapper);
+    // Reflow non-frozen pages when late-loading sticker/avatar images acquire dimensions.
+    for(const img of wrapper.querySelectorAll('.lfr-story-img')){
+      img.addEventListener('load',()=>{if(state.richSource===wrapper)schedule();},{once:true});
+      img.addEventListener('error',()=>{if(state.richSource===wrapper)schedule();},{once:true});
+    }
     restoreSlate(wrapper,mes);
     restorePenguins(wrapper,mes);
     compactPenguinBlocks(wrapper);

@@ -374,3 +374,14 @@
 }
 /* Remove the fixed negative penguin offset: it overlapped prose whenever
    the original margin had already collapsed. Use a nonnegative gap. */
+
+/* v0.3.46: bounded read-only story cards, images and inline location previews. */
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-card{display:block!important;width:fit-content!important;max-width:95%!important;margin:8px 0 12px!important;overflow:visible!important;font:normal .82em/1.45 system-ui,sans-serif;break-inside:avoid}
+#lfr-root .lfr-story-card *{box-sizing:border-box}
+#lfr-root .lfr-story-card img.lfr-story-img{display:block;max-width:100%;height:auto;object-fit:contain}
+#lfr-root .lfr-story-card img.lfr-story-avatar{width:30px!important;height:30px!important;object-fit:cover;flex:none}
+#lfr-root .lfr-story-card svg{max-width:24px;max-height:24px}
+#lfr-root .lfr-story-card :is(p,div){overflow-wrap:anywhere}
+#lfr-root .lfr-story-card :is(p,div) + :is(p,div){margin-top:0}
+#lfr-root .lfr-story-location{max-width:310px!important}
+#lfr-root .lfr-story-sticker img:not(.lfr-story-avatar){max-width:100px;max-height:160px}
