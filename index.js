@@ -270,6 +270,53 @@
     }
     console.info('[Little Fish Reader] Penguin:', state.showPenguin ? 'shown' : 'hidden', matched, 'of', tokens.length);
   }
+  // Generic regex-HTML compatibility: sample the browser's already-computed
+  // styles instead of executing <style> blocks or importing arbitrary selectors.
+  // Copy only a narrow set of visual properties; never copy positioning, URLs,
+  // animations, transforms, visibility, or untrusted class names.
+  const decorativeProps = ['backgroundColor','borderRadius','paddingTop','paddingRight','paddingBottom','paddingLeft',
+    'marginTop','marginRight','marginBottom','marginLeft','borderTopWidth','borderRightWidth','borderBottomWidth','borderLeftWidth',
+    'borderTopStyle','borderRightStyle','borderBottomStyle','borderLeftStyle','borderTopColor','borderRightColor','borderBottomColor','borderLeftColor',
+    'boxShadow','textAlign','lineHeight','fontSize','maxWidth'];
+  function safeDecorValue(prop,value) {
+    if (!value || value.length > 180 || /url\s*\(|expression\s*\(|var\s*\(|[;{}]/i.test(value)) return false;
+    if (prop === 'boxShadow') return value === 'none' || (/^[#\w\s.,()%+-]+$/.test(value) && value.length < 130);
+    if (prop === 'maxWidth') return /^(none|\d+(?:\.\d+)?(?:px|%))$/.test(value);
+    if (prop === 'fontSize') return /^\d+(?:\.\d+)?px$/.test(value) && parseFloat(value)>=8 && parseFloat(value)<=60;
+    if (prop === 'lineHeight') return /^(normal|\d+(?:\.\d+)?px)$/.test(value);
+    if (/^(padding|margin|border.*Width)/.test(prop)) return /^-?\d+(?:\.\d+)?px$/.test(value) && Math.abs(parseFloat(value))<=80;
+    if (prop === 'textAlign') return /^(left|right|center|justify|start|end)$/.test(value);
+    if (prop.endsWith('Style')) return /^(none|solid|dashed|dotted|double)$/.test(value);
+    if (prop.endsWith('Color') || prop === 'backgroundColor') return /^(transparent|currentcolor|rgba?\([\d\s.,%]+\)|#[\da-f]{3,8})$/i.test(value);
+    if (prop === 'borderRadius') return /^[\d.%px\s/]+$/.test(value) && value.length<90;
+    return false;
+  }
+  function decorateFromSource(el,out) {
+    if (!el.classList.length || [...el.classList].some(c=>slateClasses.has(c)) || el.closest('.lfr-penguin')) return;
+    const cs=getComputedStyle(el);
+    // Avoid turning ordinary SillyTavern paragraphs into decorative widgets.
+    const visual = cs.backgroundColor !== 'rgba(0, 0, 0, 0)' && cs.backgroundColor !== 'transparent' ||
+      [...['Top','Right','Bottom','Left']].some(side=>parseFloat(cs['border'+side+'Width'])>0) ||
+      [...['Top','Right','Bottom','Left']].some(side=>parseFloat(cs['padding'+side])>=5) ||
+      cs.boxShadow !== 'none';
+    const isLayout = cs.display === 'flex' || cs.display === 'inline-flex';
+    if (!visual && !isLayout) return;
+    out.classList.add('lfr-decorated');
+    for(const prop of decorativeProps){
+      const value=cs[prop];
+      if(safeDecorValue(prop,value))out.style[prop]=value;
+    }
+    if (isLayout) {
+      out.style.display=cs.display;
+      if (/^(row|column|row-reverse|column-reverse)$/.test(cs.flexDirection))out.style.flexDirection=cs.flexDirection;
+      if (/^(flex-start|flex-end|center|stretch|baseline)$/.test(cs.alignItems))out.style.alignItems=cs.alignItems;
+      if (/^(flex-start|flex-end|center|space-between|space-around|space-evenly)$/.test(cs.justifyContent))out.style.justifyContent=cs.justifyContent;
+      if (/^\d+(?:\.\d+)?px$/.test(cs.gap) && parseFloat(cs.gap)<=48)out.style.gap=cs.gap;
+    } else if (cs.display === 'inline-block') out.style.display='inline-block';
+    // Keep the complete component together when possible; the paginator may
+    // split it as a fallback if it exceeds a full page.
+    out.dataset.lfrDecorated='1';
+  }
   function richSnapshot(mes) {
     const source = sourceNode(mes);
     if (!source) return null;
@@ -304,6 +351,7 @@
       if (cs.fontFamily && !el.classList.contains('slate-title')) out.style.fontFamily = cs.fontFamily;
       // Retain theme's explicit quote/italic/underline colors as computed by the browser.
       // The source's typography is the authority; no hard-coded theme color constants.
+      decorateFromSource(el,out);
       parent.append(out);
       for (const child of el.childNodes) copy(child,out);
     }
@@ -372,7 +420,8 @@
     const canReuse=prior.length && positions.total>=state.streamSourceText.length &&
       positions.nodes.map(n=>n.node.nodeValue).join('').startsWith(state.streamSourceText);
     state.pages=canReuse?prior.map(x=>x.slice()):[];
-    const bubbles=[...source.querySelectorAll('.lfr-penguin')].map(el=>{
+    const bubbles=[...source.querySelectorAll('.lfr-penguin,.lfr-decorated')].filter(el=>
+      el.classList.contains('lfr-penguin') || !el.parentElement?.closest('.lfr-decorated')).map(el=>{
       const nodes=positions.nodes.filter(n=>el.contains(n.node));
       return nodes.length?{start:nodes[0].start,end:nodes[nodes.length-1].end}:null;
     }).filter(Boolean);
@@ -449,14 +498,14 @@
       const anchor = $('.mes_buttons', mes) || $('.mes_text', mes) || mes;
       const btn = document.createElement('button');
       btn.type = 'button'; btn.className = 'lfr-launch'; btn.title = '阅读这条 AI 回复'; btn.setAttribute('aria-label', '阅读这条 AI 回复');
-      btn.textContent = '📖';
+      btn.textContent = ''; // icon supplied by CSS; aria-label remains for accessibility
       btn.addEventListener('click', e => { e.stopPropagation(); e.preventDefault(); openReader(mes); });
       anchor.append(btn);
     });
   }
   function buildOverlay() {
     const root = document.createElement('div'); root.id = 'lfr-root';
-    root.innerHTML = `<div class="lfr-backdrop"></div><section class="lfr-book" role="dialog" aria-modal="true" aria-label="小鱼阅读器"><div class="lfr-tools"><span class="lfr-title">小鱼阅读器 · 测试版</span><button data-action="smaller" title="缩小字号">A−</button><button data-action="larger" title="放大字号">A+</button><button data-action="close" title="退出阅读模式">退出 ✕</button><button data-action="settings" title="阅读设置">⚙</button></div><div class="lfr-settings" hidden><label><input type="checkbox" class="lfr-align-toggle" checked> 对齐酒馆聊天区域</label><label><input type="checkbox" class="lfr-penguin-toggle"> 显示企鹅弹幕（头像＋气泡）</label><button type="button" class="lfr-debug-toggle" data-action="toggle-debug" aria-pressed="false">Debug：关闭</button><label for="lfr-tags">清洗标签（每行一个标签名，不带尖括号）</label><textarea id="lfr-tags" spellcheck="false"></textarea><div class="lfr-settings-actions"><button data-action="save-settings">保存并重新排版</button><button data-action="cancel-settings">取消</button></div></div><div class="lfr-pages"><article class="lfr-page" data-page="left"></article><article class="lfr-page" data-page="right"></article><span class="lfr-num lfr-num-left"></span><span class="lfr-num lfr-num-right"></span><div class="lfr-notice" aria-live="polite"></div></div></section>`;
+    root.innerHTML = `<div class="lfr-backdrop"></div><section class="lfr-book" role="dialog" aria-modal="true" aria-label="小鱼阅读器"><div class="lfr-tools"><span class="lfr-title">小鱼阅读器 · v0.3</span><button data-action="smaller" title="缩小字号">A−</button><button data-action="larger" title="放大字号">A+</button><button data-action="close" title="退出阅读模式">退出 ✕</button><button data-action="settings" title="阅读设置">⚙</button></div><div class="lfr-settings" hidden><label><input type="checkbox" class="lfr-align-toggle" checked> 对齐酒馆聊天区域</label><label><input type="checkbox" class="lfr-penguin-toggle"> 显示特殊美化（弹幕、短信等）</label><button type="button" class="lfr-debug-toggle" data-action="toggle-debug" aria-pressed="false">Debug：关闭</button><label for="lfr-tags">清洗标签（每行一个标签名，不带尖括号）</label><textarea id="lfr-tags" spellcheck="false"></textarea><div class="lfr-settings-actions"><button data-action="save-settings">保存并重新排版</button><button data-action="cancel-settings">取消</button></div></div><div class="lfr-pages"><article class="lfr-page" data-page="left"></article><article class="lfr-page" data-page="right"></article><span class="lfr-num lfr-num-left"></span><span class="lfr-num lfr-num-right"></span><div class="lfr-notice" aria-live="polite"></div></div></section>`;
     document.body.append(root);
     state.root = root;
     cssFont();
@@ -464,7 +513,7 @@
     const debug=document.createElement('div');
     debug.className='lfr-debug-panel';
     debug.hidden=true;
-    debug.innerHTML='<span class="lfr-debug-title">图层诊断 · 仅测试版</span><button type="button" class="lfr-debug-cycle">模式：全部显示</button><span class="lfr-debug-note">点击切换模式，再翻页录屏</span>';
+    debug.innerHTML='<span class="lfr-debug-title">图层诊断 · 调试工具</span><button type="button" class="lfr-debug-cycle">模式：全部显示</button><span class="lfr-debug-note">点击切换模式，再翻页录屏</span>';
     root.append(debug);
     const modes=[['all','全部显示'],['live','隐藏原始书页'],['stationary','隐藏静止副本'],['sheet','隐藏旋转纸张'],['opaque','不透明隔离']];
     let modeIndex=0;

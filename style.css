@@ -315,3 +315,15 @@
    from layout or DOM. Opacity on the .mes ancestor keeps the child computed
    styles visible to the streaming parser and preserves the chat backdrop. */
 #chat .mes.lfr-source-concealed { opacity: 0 !important; }
+
+/* v0.3.40: generic allowlisted computed visual styles for regex HTML.
+   Inline styles on lfr-decorated override the normal rich-text reset. */
+#lfr-root .lfr-page.lfr-rich-page .lfr-decorated {
+  box-sizing:border-box; max-width:100%; overflow-wrap:anywhere;
+}
+#lfr-root .lfr-page.lfr-rich-page .lfr-decorated > p {
+  margin:0;
+}
+
+/* Community edition: matching white open-book icon. */
+#chat .lfr-launch {background-image:url("book-icon.png");background-position:center;background-repeat:no-repeat;background-size:23px 23px;}
