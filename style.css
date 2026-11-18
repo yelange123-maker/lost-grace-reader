@@ -327,3 +327,13 @@
 
 /* Community edition: matching white open-book icon. */
 #chat .lfr-launch {background-image:url("book-icon.png");background-position:center;background-repeat:no-repeat;background-size:23px 23px;}
+
+/* v0.3.43: match adjacent toolbar icons without a separate framed button.
+   The PNG has transparent padding inside its 192px canvas, so its background
+   size must be larger than the desired visible glyph. */
+#chat .lfr-launch {
+  min-width:32px;min-height:32px;width:32px;height:32px;
+  padding:0;margin:2px;
+  border:0;background-color:transparent;box-shadow:none;
+  border-radius:0;background-size:34px 34px;
+}

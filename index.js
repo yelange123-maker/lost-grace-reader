@@ -343,7 +343,12 @@
       // transforms, user HTML event handlers, or source CSS selectors can leak in.
       if (cs.color) out.style.color = cs.color;
       if (cs.fontStyle !== 'normal') out.style.fontStyle = cs.fontStyle;
-      if (!el.classList.contains('slate-title') && !el.classList.contains('slate-location') && cs.fontWeight !== '400' && cs.fontWeight !== 'normal') out.style.fontWeight = cs.fontWeight;
+      // Explicitly preserve normal weight on regex-styled elements too. Otherwise
+      // inherited reader/theme weight can make a 400-weight bubble look bold.
+      if (!el.classList.contains('slate-title') && !el.classList.contains('slate-location') &&
+          (cs.fontWeight !== '400' && cs.fontWeight !== 'normal' ||
+           (el.classList.length && ![...el.classList].some(c => slateClasses.has(c)))))
+        out.style.fontWeight = cs.fontWeight;
       if (cs.textDecorationLine && cs.textDecorationLine !== 'none') out.style.textDecorationLine = cs.textDecorationLine;
       if (cs.textDecorationColor && cs.textDecorationColor !== 'currentcolor') out.style.textDecorationColor = cs.textDecorationColor;
       // Allowlist layout typography takes precedence over the source's computed font.
