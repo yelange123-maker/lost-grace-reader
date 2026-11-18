@@ -277,12 +277,11 @@
   const decorativeProps = ['backgroundColor','borderRadius','paddingTop','paddingRight','paddingBottom','paddingLeft',
     'marginTop','marginRight','marginBottom','marginLeft','borderTopWidth','borderRightWidth','borderBottomWidth','borderLeftWidth',
     'borderTopStyle','borderRightStyle','borderBottomStyle','borderLeftStyle','borderTopColor','borderRightColor','borderBottomColor','borderLeftColor',
-    'boxShadow','textAlign','lineHeight','fontSize','maxWidth'];
+    'boxShadow','textAlign','lineHeight','maxWidth'];
   function safeDecorValue(prop,value) {
     if (!value || value.length > 180 || /url\s*\(|expression\s*\(|var\s*\(|[;{}]/i.test(value)) return false;
     if (prop === 'boxShadow') return value === 'none' || (/^[#\w\s.,()%+-]+$/.test(value) && value.length < 130);
     if (prop === 'maxWidth') return /^(none|\d+(?:\.\d+)?(?:px|%))$/.test(value);
-    if (prop === 'fontSize') return /^\d+(?:\.\d+)?px$/.test(value) && parseFloat(value)>=8 && parseFloat(value)<=60;
     if (prop === 'lineHeight') return /^(normal|\d+(?:\.\d+)?px)$/.test(value);
     if (/^(padding|margin|border.*Width)/.test(prop)) return /^-?\d+(?:\.\d+)?px$/.test(value) && Math.abs(parseFloat(value))<=80;
     if (prop === 'textAlign') return /^(left|right|center|justify|start|end)$/.test(value);
@@ -352,6 +351,22 @@
       // Retain theme's explicit quote/italic/underline colors as computed by the browser.
       // The source's typography is the authority; no hard-coded theme color constants.
       decorateFromSource(el,out);
+      // v0.3.42: computed px font sizes are absolute values from the tavern
+      // viewport. Preserve the source's relative scale instead of copying px
+      // into the reader, whose base font size is independently configurable.
+      // Apply to styled regex descendants too (e.g. a bubble's inner <p>).
+      // Leave Slate and penguin typography under their existing adapters.
+      if (!el.closest('.elegant-slate-container,.lfr-penguin') &&
+          ![...el.classList].some(c => slateClasses.has(c)) &&
+          (el.classList.length || el.parentElement?.closest('[class]'))) {
+        const parentSize = el.parentElement ? parseFloat(getComputedStyle(el.parentElement).fontSize) : NaN;
+        const ownSize = parseFloat(cs.fontSize);
+        if (Number.isFinite(parentSize) && parentSize > 0 && Number.isFinite(ownSize) && ownSize > 0) {
+          const ratio = ownSize / parentSize;
+          if (ratio >= 0.4 && ratio <= 2.5 && Math.abs(ratio - 1) > 0.015)
+            out.style.fontSize = `${Number(ratio.toFixed(4))}em`;
+        }
+      }
       parent.append(out);
       for (const child of el.childNodes) copy(child,out);
     }
