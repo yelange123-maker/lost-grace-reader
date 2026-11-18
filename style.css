@@ -463,3 +463,10 @@
 /* Outgoing time sits before the bubble; give it a little breathing room. */
 #lfr-root .lfr-page.lfr-rich-page .lfr-story-outgoing .lfr-chat-body{column-gap:11px!important}
 #lfr-root .lfr-page.lfr-rich-page .lfr-story-outgoing .lfr-chat-body > p{margin-right:5px!important}
+
+/* v0.3.60: only consecutive chat-only paragraphs lose the generic 1em prose gap.
+   Preserve normal prose-to-chat and chat-to-prose spacing, and the intrinsic
+   contents of each avatar/name/bubble/time row. */
+#lfr-root .lfr-page.lfr-rich-page :is(p,blockquote).lfr-chat-card-block + :is(p,blockquote).lfr-chat-card-block {
+  margin-top: 0 !important;
+}

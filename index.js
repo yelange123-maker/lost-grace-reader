@@ -583,6 +583,19 @@
       token.textContent='\uFFFC';
       state.richCardMap.set(id,card);card.replaceWith(token);
     }
+    // v0.3.60: Chat-only paragraphs are not prose paragraphs. The generic
+    // adjacent-paragraph 1em rule must not add a full text-line gap between
+    // consecutive phone/sticker/redpacket messages. Keep mixed prose alone.
+    for (const token of wrapper.querySelectorAll('.lfr-card-token')) {
+      const card = state.richCardMap.get(token.dataset.lfrCardId);
+      if (!card || !card.matches('.lfr-story-phone,.lfr-story-sticker,.lfr-story-redpacket')) continue;
+      const block = token.closest('p,blockquote');
+      if (!block || !wrapper.contains(block)) continue;
+      if (block.textContent.replace(/\uFFFC/g, '').trim()) continue;
+      // Other non-text content means this paragraph isn't exclusively cards.
+      if (block.querySelector('img,svg,video,canvas,hr,table,ul,ol,.lfr-penguin')) continue;
+      block.classList.add('lfr-chat-card-block');
+    }
     // Reflow non-frozen pages when late-loading sticker/avatar images acquire dimensions.
     for(const img of [...state.richCardMap.values()].flatMap(card=>[...card.querySelectorAll('.lfr-story-img')])){
       img.addEventListener('load',()=>{if(state.richSource===wrapper)schedule();},{once:true});
