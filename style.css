@@ -448,3 +448,9 @@
 #lfr-root .lfr-page.lfr-rich-page .lfr-story-outgoing .lfr-chat-body{flex-direction:row-reverse!important}
 #lfr-root .lfr-page.lfr-rich-page .lfr-chat-body>p{flex:0 0 auto!important;white-space:nowrap!important;overflow-wrap:normal!important;word-break:normal!important;margin:0!important;position:static!important}
 #lfr-root .lfr-page.lfr-rich-page .lfr-chat-body>div,#lfr-root .lfr-page.lfr-rich-page .lfr-chat-body>label{flex:0 1 auto!important;min-width:0!important;max-width:100%!important}
+
+/* v0.3.56: old v0.3.52 outgoing descendant rule was turning the CONTENT column into a row.
+   Restore vertical name-above-bubble anatomy with stronger, precise selectors. */
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-outgoing .lfr-chat-row > .lfr-chat-content{display:flex!important;flex-direction:column!important;align-items:flex-end!important;justify-content:flex-start!important}
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-outgoing .lfr-chat-row > .lfr-chat-content > p:first-child{display:block!important;align-self:flex-end!important;text-align:right!important;margin:0 0 3px!important}
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-outgoing .lfr-chat-row > .lfr-chat-content > .lfr-chat-body{display:flex!important;flex-direction:row-reverse!important;align-items:flex-end!important}
