@@ -383,7 +383,17 @@
         const url=safeImageURL(node.getAttribute('src'));if(!url)return;
         const img=document.createElement('img');img.src=url;img.alt=node.alt||'';img.loading='lazy';
         img.className='lfr-story-img';
-        if(node.getAttribute('style')?.includes('30px'))img.classList.add('lfr-story-avatar');
+        // The text-range paginator can clone only part of a card and lose its
+        // .lfr-story-card ancestor. Inline dimensions keep images bounded even
+        // in that partial fragment, before the image finishes loading.
+        const isAvatar = node === el.querySelector(':scope > div > img[src]') ||
+          (/width:\s*30px/i.test(node.getAttribute('style')||'') && /height:\s*30px/i.test(node.getAttribute('style')||''));
+        if(isAvatar){
+          img.classList.add('lfr-story-avatar');
+          img.style.cssText='display:block;width:30px!important;height:30px!important;min-width:30px;max-width:30px;min-height:30px;max-height:30px;object-fit:cover;flex:0 0 30px;border-radius:5px;';
+        }else{
+          img.style.cssText='display:block;width:auto;max-width:100px;max-height:160px;height:auto;object-fit:contain;border-radius:4px;';
+        }
         parent.append(img);return;
       }
       const tag=node.tagName.toLowerCase(),out=document.createElement(tag);

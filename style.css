@@ -385,3 +385,7 @@
 #lfr-root .lfr-story-card :is(p,div) + :is(p,div){margin-top:0}
 #lfr-root .lfr-story-location{max-width:310px!important}
 #lfr-root .lfr-story-sticker img:not(.lfr-story-avatar){max-width:100px;max-height:160px}
+
+/* v0.3.47: image bounds survive text-range fragments without story-card ancestors. */
+#lfr-root .lfr-page img.lfr-story-avatar{width:30px!important;height:30px!important;min-width:30px!important;max-width:30px!important;min-height:30px!important;max-height:30px!important;object-fit:cover!important;flex:0 0 30px!important}
+#lfr-root .lfr-page img.lfr-story-img:not(.lfr-story-avatar){max-width:100px!important;max-height:160px!important;width:auto;height:auto;object-fit:contain}
