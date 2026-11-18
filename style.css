@@ -419,3 +419,16 @@
 #lfr-root .lfr-page .lfr-story-card{box-sizing:border-box!important;max-width:100%!important;min-width:0!important}
 #lfr-root .lfr-page .lfr-story-card > div{box-sizing:border-box!important;max-width:100%!important;min-width:0!important}
 #lfr-root .lfr-page .lfr-story-card > div > div{min-width:0!important;max-width:calc(100% - 40px)!important}
+
+/* v0.3.52: compact consecutive message cards without touching the paginator. */
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-card:is(.lfr-story-phone,.lfr-story-sticker,.lfr-story-redpacket){margin:4px 0 6px!important}
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-card:is(.lfr-story-phone,.lfr-story-sticker,.lfr-story-redpacket) > div{margin-bottom:0!important}
+/* Outgoing messages: avatar on the right, content and time immediately to its left. */
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-outgoing{margin-left:auto!important;margin-right:0!important}
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-outgoing > div{justify-content:flex-end!important;flex-direction:row!important}
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-outgoing > div > div{align-items:flex-end!important}
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-outgoing > div > div > p:first-child{text-align:right!important}
+#lfr-root .lfr-page.lfr-rich-page .lfr-story-outgoing > div > div > div{flex-direction:row-reverse!important;justify-content:flex-start!important}
+/* The end stamp spans and centers in the available reading column. */
+#lfr-root .lfr-page.lfr-rich-page p.lfr-end-stamp{display:block!important;width:100%!important;max-width:100%!important;text-align:center!important;margin:0.7em 0!important}
+#lfr-root .lfr-page.lfr-rich-page p.lfr-end-stamp > span{display:block!important;width:100%!important;text-align:center!important}

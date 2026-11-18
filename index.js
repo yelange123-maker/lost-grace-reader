@@ -430,6 +430,15 @@
       parent.append(out);for(const child of node.childNodes)append(child,out);
     }
     append(el,root);
+    // v0.3.52: distinguish outgoing phone rows by the source's avatar
+    // placement and right-aligned flex layout, not bubble color alone.
+    if(['phone','sticker','redpacket'].includes(kind)) {
+      const sourceRow=el.firstElementChild;
+      const sourceAvatar=sourceRow?.lastElementChild;
+      if(sourceAvatar?.tagName==='IMG' && sourceRow?.querySelector(':scope > div')) {
+        root.classList.add('lfr-story-outgoing');
+      }
+    }
     // The source message's text column may have a computed width derived from
     // its original viewport. Never carry that narrow measurement into a book.
     if(['phone','sticker','redpacket'].includes(kind)) {
@@ -485,6 +494,10 @@
       }
       const tag = richTags.has(el.tagName) ? el.tagName.toLowerCase() : 'span';
       const out = document.createElement(tag);
+      // v0.3.52: a centered end-of-story stamp is a block-level element.
+      // Text-align on its inner span alone does not center its container.
+      if(el.tagName==='P' && el.textContent?.trim()==='✦ 此处收笔 ✦' &&
+         el.querySelector('span[style*="text-align"]'))out.classList.add('lfr-end-stamp');
       for (const cls of el.classList) if (slateClasses.has(cls)) out.classList.add(cls);
       const cs = getComputedStyle(el);
       // Only typographic computed styles are copied; no positioning, backgrounds,
