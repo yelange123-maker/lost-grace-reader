@@ -443,20 +443,19 @@
     // its original viewport. Never carry that narrow measurement into a book.
     if(['phone','sticker','redpacket'].includes(kind)) {
       const row=root.firstElementChild?.firstElementChild;
-      const content=row?.querySelector(':scope > div');
-      if(row){row.style.removeProperty('width');row.style.removeProperty('max-width');row.style.removeProperty('margin-left');row.style.removeProperty('margin-right');}
-      if(root.classList.contains('lfr-story-outgoing')){root.style.marginLeft='auto';root.style.marginRight='0';}
-      if(content){content.style.removeProperty('width');content.style.removeProperty('max-width');content.style.removeProperty('overflow');}
-      // v0.3.54: mark the actual nested message row, not the outer wrapper.
-      // Source hierarchy: card > outer container > message row > (avatar, text column).
-      if(row && content){
+      // v0.3.55: annotate actual nested nodes instead of styling the outer wrapper.
+      if(row){
         row.classList.add('lfr-chat-row');
-        content.classList.add('lfr-chat-content');
-        const avatar=row.querySelector(':scope > img.lfr-story-avatar');
+        const avatar=[...row.children].find(child=>child.matches?.('img.lfr-story-avatar'));
         if(avatar)avatar.classList.add('lfr-chat-avatar');
-        const body=content.querySelector(':scope > div');
+      }
+      const content=row?.querySelector(':scope > div');
+      if(content){
+        content.classList.add('lfr-chat-content');
+        const body=[...content.children].find(child=>child.tagName==='DIV');
         if(body)body.classList.add('lfr-chat-body');
       }
+      if(content){content.style.removeProperty('width');content.style.removeProperty('max-width');content.style.removeProperty('overflow');}
       const name=content?.querySelector(':scope > p:first-child');
       if(name){name.style.removeProperty('width');name.style.removeProperty('max-width');name.style.removeProperty('overflow');name.style.removeProperty('white-space');name.style.removeProperty('text-overflow');}
     }
