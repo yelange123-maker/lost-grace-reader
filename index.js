@@ -375,7 +375,7 @@
   function readOnlyStoryCard(el,kind) {
     const root=document.createElement('div');root.className='lfr-decorated lfr-story-card lfr-story-'+kind;
     root.dataset.lfrDecorated='1';
-    const allowed=new Set(['DIV','SPAN','P','IMG','SVG','PATH','POLYLINE','LINE']);
+    const allowed=new Set(['DIV','SPAN','P','IMG','SVG','PATH','POLYLINE','LINE','LABEL']);
     function append(node,parent) {
       if(node.nodeType===Node.TEXT_NODE){parent.append(document.createTextNode(node.nodeValue));return;}
       if(node.nodeType!==Node.ELEMENT_NODE || !allowed.has(node.tagName))return;
@@ -396,7 +396,9 @@
         }
         parent.append(img);return;
       }
-      const tag=node.tagName.toLowerCase(),out=document.createElement(tag);
+      const tag=node.tagName==='LABEL'?'div':node.tagName.toLowerCase(),out=document.createElement(tag);
+      if(kind==='sticker' && node.classList.contains('my-msg-wrapper-simple'))out.classList.add('lfr-static-image-message');
+      if(kind==='sticker' && node.classList.contains('text-overlay'))out.classList.add('lfr-static-image-caption');
       if(tag==='svg'){
         for(const attr of ['viewBox','width','height','fill','stroke','stroke-width','stroke-linecap','stroke-linejoin']){
           const val=node.getAttribute(attr);if(val && val.length<80)out.setAttribute(attr,val);
@@ -427,8 +429,9 @@
       parent.append(out);for(const child of node.childNodes)append(child,out);
     }
     append(el,root);
-    // A nonempty text position is needed for image-only messages in text-range pagination.
-    if(!root.textContent.trim())root.append(document.createTextNode('\u200b'));
+    // Every card gets a terminal text anchor, including image-only cards.
+    // This keeps the complete visual component reachable by text-range pagination.
+    root.append(document.createTextNode('\u200b'));
     return root;
   }
   function richSnapshot(mes) {
@@ -587,6 +590,10 @@
     }).filter(Boolean);
     let start=state.pages.length?state.pages[state.pages.length-1][1]:0,guard=0;
     const fitsRange=(el,end)=>{
+      // A card is an atomic page item. Partial DOM ranges can discard the
+      // avatar, label or image and produce empty pages despite visible content.
+      const crossing=bubbles.find(b=>b.start<end && end<b.end);
+      if(crossing && crossing.start>=start)end=crossing.start;
       el.replaceChildren(rangeSlice(source,positions,start,end));
       return el.scrollHeight<=el.clientHeight+1 && el.scrollWidth<=el.clientWidth+1;
     };
@@ -604,6 +611,10 @@
         const whole=crossing.end;
         if(fitsRange(el,whole)) best=Math.max(best,whole);
       }
+      // If a card starts at the page boundary, try the entire card before
+      // character-level fallback; never create a page of clipped fragments.
+      const starting=bubbles.find(b=>b.start===start);
+      if(starting && best<starting.end && fitsRange(el,starting.end))best=starting.end;
       if(best===start)best=start+1;
       if(best<positions.total){
         const [a,ao]=(()=>{for(const x of positions.nodes)if(best<x.end)return [x.node,best-x.start];return [null,0];})();

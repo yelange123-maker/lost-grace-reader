@@ -389,3 +389,12 @@
 /* v0.3.47: image bounds survive text-range fragments without story-card ancestors. */
 #lfr-root .lfr-page img.lfr-story-avatar{width:30px!important;height:30px!important;min-width:30px!important;max-width:30px!important;min-height:30px!important;max-height:30px!important;object-fit:cover!important;flex:0 0 30px!important}
 #lfr-root .lfr-page img.lfr-story-img:not(.lfr-story-avatar){max-width:100px!important;max-height:160px!important;width:auto;height:auto;object-fit:contain}
+
+/* v0.3.48: preserve phone-message row alignment after range cloning. */
+#lfr-root .lfr-story-phone,#lfr-root .lfr-story-sticker,#lfr-root .lfr-story-redpacket{width:min(100%,600px)!important;max-width:100%!important}
+#lfr-root .lfr-story-phone > div,#lfr-root .lfr-story-sticker > div,#lfr-root .lfr-story-redpacket > div{display:flex!important;flex-direction:row!important;align-items:flex-start!important;gap:8px!important}
+#lfr-root .lfr-story-phone > div > img.lfr-story-avatar,#lfr-root .lfr-story-sticker > div > img.lfr-story-avatar,#lfr-root .lfr-story-redpacket > div > img.lfr-story-avatar{flex:0 0 30px!important;align-self:flex-start!important}
+#lfr-root .lfr-story-phone > div > div,#lfr-root .lfr-story-sticker > div > div,#lfr-root .lfr-story-redpacket > div > div{min-width:0!important;max-width:calc(100% - 40px)!important}
+#lfr-root .lfr-story-card .lfr-static-image-message{display:block!important;position:relative!important;cursor:default!important}
+#lfr-root .lfr-story-card .lfr-static-image-caption{position:static!important;opacity:1!important;display:block!important;overflow:visible!important;height:auto!important;max-height:none!important;background:rgba(0,0,0,.72)!important;margin-top:4px!important;border-radius:4px!important;padding:6px!important;color:white!important;pointer-events:none!important}
+#lfr-root .lfr-story-card .lfr-static-image-caption p{color:white!important;max-height:none!important}
