@@ -110,11 +110,14 @@
   // Keep this separate from editable tag exclusions.
   function skipReaderComponent(el) {
     if (el.tagName === 'DETAILS') return true;
-    // A specific preset's decorative ending, not narrative prose.
-    // Require both the exact text and the centered paragraph styling.
-    if (el.tagName === 'P' &&
-        el.textContent.replace(/\s+/g, ' ').trim() === '☽ 故事未定 ☾' &&
-        el.style.textAlign === 'center') return true;
+    // Omit standalone decorative ending markers, including their enclosing
+    // paragraph, so they leave no empty block or pagination space.
+    // Match exact visible wording only; never drop ordinary story sentences.
+    if (el.tagName === 'P') {
+      const text = (el.textContent || '').replace(/\s+/g, ' ').trim();
+      if (/^☽\s*故事未定\s*☾$/.test(text) ||
+          /^✦\s*此处(?:落笔|收笔)\s*✦$/.test(text)) return true;
+    }
     return false;
   }
   // Slate markup is the only custom layout allowed into the reader.
@@ -548,10 +551,6 @@
       }
       const tag = richTags.has(el.tagName) ? el.tagName.toLowerCase() : 'span';
       const out = document.createElement(tag);
-      // v0.3.52: a centered end-of-story stamp is a block-level element.
-      // Text-align on its inner span alone does not center its container.
-      if(el.tagName==='P' && /^✦\s*此处(?:落笔|收笔)\s*✦$/.test(el.textContent?.trim() || ''))
-        out.classList.add('lfr-end-stamp');
       for (const cls of el.classList) if (slateClasses.has(cls)) out.classList.add(cls);
       const cs = getComputedStyle(el);
       // Only typographic computed styles are copied; no positioning, backgrounds,
