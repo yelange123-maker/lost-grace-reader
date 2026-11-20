@@ -1,43 +1,66 @@
-# 小鱼阅读器 · v0.2.0 实验版
+# 🐟 小鱼阅读器 | Little Fish Reader
 
-SillyTavern 原生扩展。保留 v0.1 的阅读入口、独立双页阅读层、左右点击/滑动翻页、中央呼出工具栏和退出功能。
+> 把 SillyTavern / TauriTavern 里的故事，变成一本可以实时翻阅的书。
 
-## 本轮变化
-- 从酒馆已渲染的 `.mes_text` 中提取可见文本，跳过 `display:none`、`visibility:hidden`、`opacity:0`、`hidden`、`aria-hidden=true`、`inert`、`content-visibility:hidden` 元素和表单/按钮等。
-- 对关闭的 `<details>` 只保留 `<summary>`（目前尚不能判断 summary 是否为正文）。
-- 进入阅读模式时采样正文计算样式，尝试继承字体、颜色、字号、字距、行高。字号按钮仍可临时微调。
-- 保留 v0.1 字符级分页；不修改原始聊天内容。
+**当前版本：v0.3.63（v0.3 测试版）**
 
-## 尚未实现
-- 富文本 HTML 的跨页拆分、单独的正则重新执行、内联高亮/颜色、完整 CSS 样式复刻。
-- 被 CSS `clip-path`、视觉遮罩、折叠插件 JavaScript 或特殊伪元素隐藏的内容，可能仍被读到。
-- `<details>` 的 summary 可能仍是思维链标题；如遇到请提供截图和 DOM 示例。
+> [!IMPORTANT]
+> **目前仅针对 iPhone Duo 开发和实机测试。仅限 iPhone Duo 使用；其他 iPhone、iPad、Android 和 PC 设备尚未适配或验证，请勿视为兼容。**
+>
+> 此版本仍在测试中，不保证适配所有酒馆主题、正则美化与特殊聊天卡片。
 
-## 更新方法
-在 GitHub 仓库根目录替换 `manifest.json`、`index.js`、`style.css`，提交后在 SillyTavern 扩展管理器更新扩展并刷新。先备份原版。不要上传外层文件夹造成嵌套。
+## ✨ 功能
 
-## 测试建议
-同一条 AI 回复，分别检查：思维链是否被过滤；正文是否完整；字体、颜色、字号是否接近酒馆；分页、翻页、退出是否正常。若正文缺失，回滚 v0.1。
+- **沉浸式书页阅读**：从聊天消息旁的小书本入口打开独立阅读器，自动将故事整理成书页，显示页码并支持翻页。
+- **3D 翻页动画**：支持点击或滑动触发翻页动画。当前为固定动画的翻页 1.0，**尚不支持纸页随手指实时拖动**。
+- **流式阅读**：阅读器打开后，正在生成的回复可以持续同步到书页；尽量保留已完成页面的分页结果。**不会自动打开或自动翻到下一页。**
+- **富文本显示**：尽量保留正文中的常见格式、颜色与内联高亮，并过滤部分隐藏元素。
+- **特殊美化（实验）**：设置中可选择「显示特殊美化（弹幕、短信等）」，尝试呈现企鹅弹幕、手机聊天气泡、贴图等特殊结构，尽量使聊天卡片整体分页。
+- **阅读设置**：字号调整、对齐酒馆聊天区域、自定义需要清洗的 HTML 标签，以及默认关闭的 Debug 图层诊断。
+- **结尾标记清理**：阅读器会跳过独立成段的 `☽ 故事未定 ☾`、`✦ 此处落笔 ✦`、`✦ 此处收笔 ✦` 标记；不改变酒馆原消息。
 
+## 📦 安装
 
-v0.3.23 visual test: temporary flip surfaces no longer paint a second translucent paper tint over the shared book backdrop. Diagnostic panel remains available; opaque isolation mode still overrides the test.
+1. 在 **SillyTavern / TauriTavern** 中打开 **「扩展」→「安装扩展」**。
+2. 粘贴此 Git 仓库地址：
 
-v0.3.24 visual test: remove only the stationary duplicate paper tint; rotating sheet retains its translucent background. Diagnostic controls retained.
+   ```text
+   https://github.com/yelange123-maker/lost-grace-reader
+   ```
 
-v0.3.25 timing test: 500ms linear page turn; midpoint 250ms; fallback completion 540ms. All v0.3.24 visual and diagnostic behavior retained.
+3. 确认安装，完成后**刷新酒馆页面**。
 
+> **维护者注意**：分享安装链接之前，仓库根目录必须包含有效的 `manifest.json`、`index.js`、`style.css`、`book-icon.png` 等插件文件，不能只有本 README。此处的 Git 地址来自插件 `manifest.json`，发布前请确认仓库代码已同步到 v0.3.63。
 
-v0.3.30: Penguin recovery from original SillyTavern chat markers when regex-rendered DOM no longer carries dm-* classes; keep v0.3.29 toggle and v0.3.28 flip behavior.
+## 📖 使用方法
 
-v0.3.32: Remove empty paragraph/inline wrappers left by hidden penguin components before pagination, so they do not reserve blank height.
+1. 打开包含故事正文的聊天记录。
+2. 找到对应 **AI 消息操作栏**中的白色书本图标，点击进入阅读器。
+3. 使用翻页操作浏览书页；通过工具栏调整字号、退出阅读器。
+4. 打开设置，可以调整阅读区域对齐、切换特殊美化显示、配置清洗标签；更改设置后选择 **「保存并重新排版」**。
+5. 如果 AI 正在流式生成该消息，可以在阅读器中继续阅读逐步更新的内容；翻页仍由用户手动控制。
 
-v0.3.34: Balance penguin paragraph incoming/outgoing spacing at 10px; retain bubble and all flip behavior.
+## ⚠️ 已知限制
 
-v0.3.35: Add zero-width pagination boundaries around penguin components to keep avatars with bubbles; reduce incoming gap and retain outgoing breathing room.
+- **设备限制**：仅在 iPhone Duo 上进行针对性开发与测试；其他设备不在当前支持范围。
+- **主题兼容性**：特殊美化依赖原酒馆生成的 HTML/CSS 结构。不同主题、正则与屏幕形态下，聊天气泡可能出现间距、时间戳、尖角、换行或分页差异。
+- **分页限制**：较复杂的卡片会尽量保持为一个整体；放不下时可能整体移动到下一页，导致上一页留白。
+- **流式限制**：依赖酒馆中已渲染消息的更新情况，不保证适用于所有输出插件或自定义 DOM 更新方式。
+- **翻页 2.0 未实现**：当前没有手指实时拖拽纸张、松手回弹等交互；这属于未来开发计划。
+- **当前为测试版**：如果出现异常，请先关闭特殊美化进行对照，并保留问题截图以便反馈。
 
-## v0.3.38 流式阅读 1.0（实验）
-- 手动打开已有正文的 AI 消息；不自动弹出、不自动翻页。
-- 阅读器打开期间每 350ms 检查源消息正文是否变化；仅变化时重建安全富文本快照和分页。
-- 对仅追加的消息尽量复用已完成的前置分页边界，末尾两页始终重新排版；若正文被改写、重生成、字号/设置/窗口尺寸变化则解除冻结。
-- 翻页动画播放期间暂停同步，动画结束后再更新；退出阅读器停止轮询。
-- 当前版本为兼容性验证版：不同酒馆主题/正则的 DOM 更新可能影响稳定分页，需在真实流式回复下测试。尚未实现后台独立分页或可视化双页预热提示。
+## 🛠️ 问题反馈
+
+反馈时请尽量提供：
+
+- 阅读器版本（例如 `v0.3.63`）
+- iPhone Duo 的显示状态（横屏 / 竖屏 / 外屏）
+- SillyTavern / TauriTavern 版本
+- 使用的主题与正则美化类型（如涉及手机聊天卡片）
+- 问题截图、触发步骤，以及开启/关闭特殊美化后的对比
+
+可以通过本仓库的 **Issues** 提交反馈。
+
+---
+
+*让故事不止停留在聊天框里。愿每一次翻页，都能遇见新的故事。* ✦
